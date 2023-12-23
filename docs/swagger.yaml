@@ -1,0 +1,29 @@
+basePath: /api
+externalDocs:
+  description: GitHub repository
+  url: https://github.com/Steadfastie/gokube
+host: localhost:8080
+info:
+  contact:
+    email: alexander.divovich@gmail.com
+  title: Swagger for steadfastie/gokube project
+  version: "1.0"
+paths:
+  /ping:
+    get:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: ping entry
+      tags:
+      - ping
+securityDefinitions:
+  BasicAuth:
+    type: basic
+swagger: "2.0"
