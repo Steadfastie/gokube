@@ -1,0 +1,28 @@
+version: '3.9'
+
+services:
+  mongodb:
+    image: mongo:7.0.4
+    container_name: mongo
+    command: [ "mongod", "--replSet", "rs0", "--quiet", "--bind_ip_all", "--logpath", "/dev/null" ]
+    volumes:
+      - mongo-local:/data/db
+    ports:
+      - 30000:27017
+    healthcheck:
+      test: [ "CMD", "mongosh", "--eval", "db.runCommand('ping').ok" ]
+      interval: 1s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  mongodb-init-replica:
+    image: mongo:7.0.4
+    container_name: mongo-init
+    depends_on:
+      - mongodb
+    entrypoint: [ "bash", "-c", "sleep 30 && echo 'rs.initiate({_id : \"rs0\", members: [{ _id : 0, host : \"mongodb:27017\" }]})' | mongosh mongodb:27017" ]
+    
+volumes:
+  mongo-local:
+    name: mongo-local
