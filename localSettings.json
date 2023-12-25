@@ -1,0 +1,7 @@
+{
+  "MongoSettings": {
+    "MongoConnectionString": "localhost:30000",
+    "MongoDatabase": "gokube-dev"
+  },
+  "LogLevel": "debug"
+}

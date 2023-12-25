@@ -9,13 +9,13 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	_ "github.com/steadfastie/gokube/docs"
 	"github.com/steadfastie/gokube/handlers"
+	"github.com/steadfastie/gokube/infrastucture"
 	swaggerfiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"go.uber.org/zap"
-	"log"
 	"net/http"
+	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 	"time"
 )
@@ -32,6 +32,7 @@ var (
 
 func init() {
 	prometheus.MustRegister(httpReqs)
+	zap.ReplaceGlobals(zap.Must(zap.NewProduction()))
 }
 
 func metricsHandlerFunc(c *gin.Context) {
@@ -56,21 +57,15 @@ func main() {
 	// Create context that listens for the interrupt signal from the OS.
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 
+	infrastucture.InitializeServices(ctx, zap.L())
+
 	// Create gin router
 	router := gin.Default()
-	router.Use(metricsHandlerFunc)
-
-	// Configure logs
-	logger, err := zap.NewProduction()
-	if err != nil {
-		log.Fatalf("can't initialize zap logger: %v", err)
+	if os.Getenv("APP_ENV") == "production" {
+		gin.SetMode(gin.ReleaseMode)
 	}
-	defer func(logger *zap.Logger) {
-		// Error is written if OS didn't take care of flushing buffers out
-		if err := logger.Sync(); err != nil && !strings.Contains(err.Error(), "sync /dev/stderr: The handle is invalid.") {
-			log.Fatalf("can't sync zap logger: %v", err)
-		}
-	}(logger)
+
+	router.Use(metricsHandlerFunc)
 
 	// Configure endpoints
 	var api = router.Group("/api")
@@ -87,20 +82,20 @@ func main() {
 	}
 	go func() {
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			logger.Fatal("Could not serve server on listen: %s", zap.Error(err))
+			zap.L().Fatal("Could not serve server on listen: %s", zap.Error(err))
 		}
 	}()
 
 	// Listen for the interrupt signal and notify user of shutdown
 	<-ctx.Done()
 	stop()
-	logger.Info("Shutting down gracefully, press Ctrl+C again to force")
+	zap.L().Info("Shutting down gracefully, press Ctrl+C again to force")
 
 	// Use context to set 5 second timeout for server
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	if err := srv.Shutdown(ctx); err != nil {
-		logger.Fatal("Server forced to shutdown: ", zap.Error(err))
+		zap.L().Fatal("Server forced to shutdown: ", zap.Error(err))
 	}
-	logger.Info("Server exiting")
+	zap.L().Info("Server exiting")
 }
