@@ -1,6 +1,6 @@
 {
   "MongoSettings": {
-    "MongoConnectionString": "localhost:30000",
+    "MongoConnectionString": "localhost:30000/?replicaSet=rs0&directConnection=true",
     "MongoDatabase": "gokube-dev"
   },
   "LogLevel": "debug"

@@ -21,4 +21,21 @@ func InitializeServices(ctx context.Context, logger *zap.Logger) {
 	if err != nil {
 		log.Fatalf("can't register zap logger: %v", err)
 	}
+
+	err = container.Singleton(func(config *Config, logger *zap.Logger) (*MongoDB, error) {
+		return NewMongoClient(ctx, config, logger)
+	})
+	if err != nil {
+		log.Fatalf("can't register MongoDB client: %v", err)
+	}
+}
+
+func DisconnectServices(ctx context.Context) {
+	var logger *zap.Logger
+	var mongodb *MongoDB
+
+	_ = container.Resolve(&logger)
+	_ = container.Resolve(&mongodb)
+
+	mongodb.DisconnectMongoClient(ctx, logger)
 }
