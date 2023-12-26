@@ -58,6 +58,7 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 
 	infrastucture.InitializeServices(ctx, zap.L())
+	defer infrastucture.DisconnectServices(ctx)
 
 	// Create gin router
 	router := gin.Default()
