@@ -2,9 +2,10 @@ package infrastucture
 
 import (
 	"context"
+	"log"
+
 	"github.com/golobby/container/v3"
 	"go.uber.org/zap"
-	"log"
 )
 
 func InitializeServices(ctx context.Context, logger *zap.Logger) {
@@ -31,11 +32,7 @@ func InitializeServices(ctx context.Context, logger *zap.Logger) {
 }
 
 func DisconnectServices(ctx context.Context) {
-	var logger *zap.Logger
-	var mongodb *MongoDB
-
-	_ = container.Resolve(&logger)
-	_ = container.Resolve(&mongodb)
-
-	mongodb.DisconnectMongoClient(ctx, logger)
+	container.Call(func(mongodb *MongoDB, logger *zap.Logger) {
+		mongodb.DisconnectMongoClient(ctx, logger)
+	})
 }
