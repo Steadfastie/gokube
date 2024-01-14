@@ -2,11 +2,12 @@ package infrastucture
 
 import (
 	"context"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 	"log"
 	"os"
 	"strings"
+
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 func NewLogger(ctx context.Context, config *Config) (*zap.Logger, error) {

@@ -4,20 +4,21 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/gin-gonic/gin"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-	_ "github.com/steadfastie/gokube/docs"
-	"github.com/steadfastie/gokube/handlers"
-	"github.com/steadfastie/gokube/infrastucture"
-	swaggerfiles "github.com/swaggo/files"
-	ginSwagger "github.com/swaggo/gin-swagger"
-	"go.uber.org/zap"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	_ "github.com/steadfastie/gokube/docs"
+	handlers "github.com/steadfastie/gokube/handlers"
+	infra "github.com/steadfastie/gokube/infrastucture"
+	swaggerfiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
+	"go.uber.org/zap"
 )
 
 var (
@@ -57,8 +58,8 @@ func main() {
 	// Create context that listens for the interrupt signal from the OS.
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 
-	infrastucture.InitializeServices(ctx, zap.L())
-	defer infrastucture.DisconnectServices(ctx)
+	infra.InitializeServices(ctx, zap.L())
+	defer infra.DisconnectServices(ctx)
 
 	// Create gin router
 	router := gin.Default()
@@ -67,11 +68,13 @@ func main() {
 	}
 
 	router.Use(metricsHandlerFunc)
+	router.Use(gin.RecoveryWithWriter(gin.DefaultErrorWriter, infra.RecoveryMiddleware))
 
 	// Configure endpoints
 	var api = router.Group("/api")
 	{
 		api.GET("/ping", handlers.EntryHandler)
+		api.GET("/panic/:type", handlers.PanicHandler)
 	}
 	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
