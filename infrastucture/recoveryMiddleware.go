@@ -2,7 +2,6 @@ package infrastucture
 
 import (
 	"net/http"
-	"reflect"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golobby/container/v3"
@@ -11,7 +10,7 @@ import (
 )
 
 type caughtError struct {
-	data any
+	data interface{}
 }
 
 func RecoveryMiddleware(c *gin.Context, e any) {
@@ -21,14 +20,11 @@ func RecoveryMiddleware(c *gin.Context, e any) {
 }
 
 func GlobalPanicRecovery(c *gin.Context, err any, logger *zap.Logger) {
-	dataValue := reflect.ValueOf(err)
-	dataValueField := dataValue.FieldByName("data")
-
-	switch data := dataValueField.Interface().(type) {
-	case errors.OptimisticLockError:
-		c.AbortWithStatusJSON(http.StatusConflict, gin.H{"error": data.Message, "details": data.Error})
-	case errors.BusinessRuleError:
-		c.AbortWithStatusJSON(http.StatusUnprocessableEntity, gin.H{"error": data.Message, "details": data.Error})
+	switch data := err.(type) {
+	case *errors.OptimisticLockError:
+		c.AbortWithStatusJSON(http.StatusConflict, gin.H{"error": data.Message, "details": data.Error.Error()})
+	case *errors.BusinessRuleError:
+		c.AbortWithStatusJSON(http.StatusUnprocessableEntity, gin.H{"error": data.Message, "details": data.Error.Error()})
 	default:
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Something went wrong"})
 	}
