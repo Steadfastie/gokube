@@ -1,11 +1,12 @@
-package infrastucture
+package services
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"go.uber.org/zap"
 	"os"
+
+	"go.uber.org/zap"
 )
 
 type Config struct {
