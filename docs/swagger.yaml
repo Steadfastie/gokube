@@ -19,6 +19,20 @@ info:
   title: Swagger for steadfastie/gokube project
   version: "1.0"
 paths:
+  /counter:
+    post:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: creates a basic structure of the project
+      tags:
+      - counter
   /panic/{type}:
     get:
       consumes:
@@ -47,20 +61,6 @@ paths:
       summary: throws a panic
       tags:
       - panic
-  /ping:
-    get:
-      consumes:
-      - application/json
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            type: string
-      summary: ping entry
-      tags:
-      - ping
 securityDefinitions:
   BasicAuth:
     type: basic

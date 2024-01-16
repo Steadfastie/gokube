@@ -17,51 +17,32 @@ import (
 
 const Collection = "basic"
 
-type BasicRepository interface {
-	GetById(ctx context.Context, id string, resultChan chan<- *BasicDocument, errChan chan<- error)
+type CounterRepository interface {
+	GetById(ctx context.Context, id string, resultChan chan<- *CounterDocument, errChan chan<- error)
 	Create(ctx context.Context, resultChan chan<- primitive.ObjectID, errChan chan<- error)
-	Patch(ctx context.Context, document *BasicDocument, resultChan chan<- *BasicDocument, errChan chan<- error)
+	Patch(ctx context.Context, document *CounterDocument, resultChan chan<- *CounterDocument, errChan chan<- error)
 }
 
-type basicRepository struct {
+type counterRepository struct {
 	Collection *mongo.Collection
 	Logger     *zap.Logger
 }
 
-func NewBasicRepository(mongodb *services.MongoDB, logger *zap.Logger) BasicRepository {
-	return &basicRepository{
+func NewCounterRepository(mongodb *services.MongoDB, logger *zap.Logger) CounterRepository {
+	return &counterRepository{
 		Collection: mongodb.MongoDB.Collection(Collection),
 		Logger:     logger,
 	}
 }
 
-type BasicDocument struct {
-	Id        primitive.ObjectID `bson:"_id"`
-	Counter   int
-	Version   int
-	CreatedAt time.Time
-	UpdatedAt time.Time
-}
-
-func NewBasicDocument() *BasicDocument {
-	now := time.Now().UTC()
-	return &BasicDocument{
-		Id:        primitive.NewObjectID(),
-		Counter:   0,
-		Version:   0,
-		CreatedAt: now,
-		UpdatedAt: now,
-	}
-}
-
-func (repo *basicRepository) GetById(ctx context.Context, id string, resultChan chan<- *BasicDocument, errChan chan<- error) {
+func (repo *counterRepository) GetById(ctx context.Context, id string, resultChan chan<- *CounterDocument, errChan chan<- error) {
 	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		errChan <- err
 		return
 	}
 
-	var result BasicDocument
+	var result CounterDocument
 	filter := bson.M{"_id": objectID}
 
 	if err := repo.Collection.FindOne(ctx, filter).Decode(&result); err != nil {
@@ -73,8 +54,8 @@ func (repo *basicRepository) GetById(ctx context.Context, id string, resultChan 
 	resultChan <- &result
 }
 
-func (repo *basicRepository) Create(ctx context.Context, resultChan chan<- primitive.ObjectID, errChan chan<- error) {
-	document := NewBasicDocument()
+func (repo *counterRepository) Create(ctx context.Context, resultChan chan<- primitive.ObjectID, errChan chan<- error) {
+	document := NewCounterDocument()
 
 	result, err := repo.Collection.InsertOne(ctx, document)
 	if err != nil {
@@ -88,8 +69,8 @@ func (repo *basicRepository) Create(ctx context.Context, resultChan chan<- primi
 	}
 }
 
-func (repo *basicRepository) Patch(ctx context.Context, document *BasicDocument, resultChan chan<- *BasicDocument, errChan chan<- error) {
-	var result BasicDocument
+func (repo *counterRepository) Patch(ctx context.Context, document *CounterDocument, resultChan chan<- *CounterDocument, errChan chan<- error) {
+	var result CounterDocument
 
 	filter := bson.D{{Key: "_id", Value: document.Id}, {Key: "version", Value: document.Version}}
 	update := bson.D{

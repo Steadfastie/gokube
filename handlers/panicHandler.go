@@ -14,7 +14,7 @@ type PanicType struct {
 // PanicHandler PanicExample godoc
 //
 //	@Summary	throws a panic
-//	@Tags			panic
+//	@Tags		panic
 //	@Accept		json
 //	@Produce	json
 //	@Param		type	path		string	true	"Type of panic"

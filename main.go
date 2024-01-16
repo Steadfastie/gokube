@@ -14,7 +14,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	_ "github.com/steadfastie/gokube/docs"
-	handlers "github.com/steadfastie/gokube/handlers"
+	"github.com/steadfastie/gokube/handlers"
 	infra "github.com/steadfastie/gokube/infrastucture"
 	swaggerfiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -70,11 +70,13 @@ func main() {
 	router.Use(metricsHandlerFunc)
 	router.Use(gin.RecoveryWithWriter(gin.DefaultErrorWriter, infra.RecoveryMiddleware))
 
+	counterController := infra.GetCounterController()
+
 	// Configure endpoints
 	var api = router.Group("/api")
 	{
-		api.GET("/ping", handlers.EntryHandler)
 		api.GET("/panic/:type", handlers.PanicHandler)
+		api.POST("/counter", counterController.CreateHandler)
 	}
 	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))

@@ -6,6 +6,7 @@ import (
 
 	"github.com/golobby/container/v3"
 	"github.com/steadfastie/gokube/data"
+	"github.com/steadfastie/gokube/handlers"
 	"github.com/steadfastie/gokube/infrastucture/services"
 	"go.uber.org/zap"
 )
@@ -32,8 +33,8 @@ func InitializeServices(ctx context.Context, logger *zap.Logger) {
 		log.Fatalf("can't register MongoDB client: %v", err)
 	}
 
-	err = container.Singleton(func(mongodb *services.MongoDB, logger *zap.Logger) data.BasicRepository {
-		return data.NewBasicRepository(mongodb, logger)
+	err = container.Singleton(func(mongodb *services.MongoDB, logger *zap.Logger) data.CounterRepository {
+		return data.NewCounterRepository(mongodb, logger)
 	})
 	if err != nil {
 		log.Fatalf("can't register Basic repo: %v", err)
@@ -44,4 +45,10 @@ func DisconnectServices(ctx context.Context) {
 	container.Call(func(mongodb *services.MongoDB, logger *zap.Logger) {
 		mongodb.DisconnectMongoClient(ctx, logger)
 	})
+}
+
+func GetCounterController() *handlers.CounterController {
+	var controller handlers.CounterController
+	container.Fill(&controller)
+	return &controller
 }
