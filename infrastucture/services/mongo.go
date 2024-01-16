@@ -1,12 +1,13 @@
-package infrastucture
+package services
 
 import (
 	"context"
+	"time"
+
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"go.uber.org/zap"
-	"time"
 )
 
 type MongoDB struct {

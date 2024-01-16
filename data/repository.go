@@ -6,9 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/golobby/container/v3"
-	"github.com/steadfastie/gokube/infrastucture"
 	domainErrors "github.com/steadfastie/gokube/infrastucture/errors"
+	"github.com/steadfastie/gokube/infrastucture/services"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -18,85 +17,95 @@ import (
 
 const Collection = "basic"
 
-type BasicDocument struct {
-	id        primitive.ObjectID `bson:"_id"`
-	counter   int
-	version   int
-	createdAt time.Time
-	updatedAt time.Time
+type BasicRepository interface {
+	GetById(ctx context.Context, id string, resultChan chan<- *BasicDocument, errChan chan<- error)
+	Create(ctx context.Context, resultChan chan<- primitive.ObjectID, errChan chan<- error)
+	Patch(ctx context.Context, document *BasicDocument, resultChan chan<- *BasicDocument, errChan chan<- error)
 }
 
-func GetById(ctx context.Context, id string, resultChan chan<- *BasicDocument, errChan chan<- error) {
+type basicRepository struct {
+	Collection *mongo.Collection
+	Logger     *zap.Logger
+}
+
+func NewBasicRepository(mongodb *services.MongoDB, logger *zap.Logger) BasicRepository {
+	return &basicRepository{
+		Collection: mongodb.MongoDB.Collection(Collection),
+		Logger:     logger,
+	}
+}
+
+type BasicDocument struct {
+	Id        primitive.ObjectID `bson:"_id"`
+	Counter   int
+	Version   int
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
+func NewBasicDocument() *BasicDocument {
+	now := time.Now().UTC()
+	return &BasicDocument{
+		Id:        primitive.NewObjectID(),
+		Counter:   0,
+		Version:   0,
+		CreatedAt: now,
+		UpdatedAt: now,
+	}
+}
+
+func (repo *basicRepository) GetById(ctx context.Context, id string, resultChan chan<- *BasicDocument, errChan chan<- error) {
 	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		errChan <- err
 		return
 	}
 
-	go func() {
-		var result BasicDocument
-		filter := bson.M{"_id": objectID}
+	var result BasicDocument
+	filter := bson.M{"_id": objectID}
 
-		container.Call(func(logger *zap.Logger, mongodb *infrastucture.MongoDB) error {
-			if err := mongodb.MongoDB.Collection(Collection).FindOne(ctx, filter).Decode(&result); err != nil {
-				if errors.Is(err, mongo.ErrNoDocuments) {
-					logger.Error("Could not find document with id", zap.Any("id", objectID))
-				}
-				resultChan <- nil
-				errChan <- err
-			}
-			resultChan <- &result
-			return err
-		})
-	}()
-}
-
-func Create(ctx context.Context, resultChan chan<- *primitive.ObjectID, errChan chan<- error) {
-	now := time.Now().UTC()
-	document := &BasicDocument{
-		id:        primitive.NewObjectID(),
-		counter:   0,
-		version:   0,
-		createdAt: now,
-		updatedAt: now,
-	}
-
-	go func() {
-		container.Call(func(logger *zap.Logger, mongodb *infrastucture.MongoDB) {
-			_, err := mongodb.MongoDB.Collection(Collection).InsertOne(ctx, document)
-			if err != nil {
-				if mongo.IsDuplicateKeyError(err) {
-					panic(domainErrors.NewOptimisticLockError(fmt.Sprintf("Document with id - {%v} - has already been modified", document.id)))
-				}
-				logger.Error("Could not create document", zap.Any("Document", document), zap.Error(err))
-				errChan <- err
-			} else {
-				resultChan <- &document.id
-			}
-		})
-	}()
-}
-
-func Patch(ctx context.Context, document *BasicDocument, resultChan chan<- *BasicDocument, errChan chan<- error) {
-	go func() {
-		var result BasicDocument
-		filter := bson.D{{Key: "_id", Value: document.id}, {Key: "version", Value: document.version}}
-		update := bson.D{
-			{Key: "$set", Value: bson.D{{Key: "counter", Value: document.counter}}},
-			{Key: "$inc", Value: bson.D{{Key: "version", Value: 1}}},
-			{Key: "$set", Value: bson.D{{Key: "updatedAt", Value: time.Now().UTC()}}},
+	if err := repo.Collection.FindOne(ctx, filter).Decode(&result); err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			repo.Logger.Error("Could not find document with id", zap.Any("id", objectID))
 		}
-		options := options.FindOneAndUpdate().SetReturnDocument(options.After)
-		container.Call(func(logger *zap.Logger, mongodb *infrastucture.MongoDB) {
-			if err := mongodb.MongoDB.Collection(Collection).FindOneAndUpdate(ctx, filter, update, options).Decode(&result); err != nil {
-				if errors.Is(err, mongo.ErrNoDocuments) {
-					panic(domainErrors.NewOptimisticLockError(fmt.Sprintf("Document with id - {%v} - has already been modified", document.id)))
-				}
-				logger.Error("Could not update document", zap.Any("Document", document), zap.Error(err))
-				errChan <- err
-			} else {
-				resultChan <- &result
-			}
-		})
-	}()
+		errChan <- err
+	}
+	resultChan <- &result
+}
+
+func (repo *basicRepository) Create(ctx context.Context, resultChan chan<- primitive.ObjectID, errChan chan<- error) {
+	document := NewBasicDocument()
+
+	result, err := repo.Collection.InsertOne(ctx, document)
+	if err != nil {
+		if mongo.IsDuplicateKeyError(err) {
+			panic(domainErrors.NewOptimisticLockError(fmt.Sprintf("Document with id - {%v} - has already been modified", document.Id)))
+		}
+		repo.Logger.Error("Could not create document", zap.Any("Document", document), zap.Error(err))
+		errChan <- err
+	} else {
+		resultChan <- result.InsertedID.(primitive.ObjectID)
+	}
+}
+
+func (repo *basicRepository) Patch(ctx context.Context, document *BasicDocument, resultChan chan<- *BasicDocument, errChan chan<- error) {
+	var result BasicDocument
+
+	filter := bson.D{{Key: "_id", Value: document.Id}, {Key: "version", Value: document.Version}}
+	update := bson.D{
+		{Key: "$set", Value: bson.D{{Key: "counter", Value: document.Counter}}},
+		{Key: "$inc", Value: bson.D{{Key: "version", Value: 1}}},
+		{Key: "$set", Value: bson.D{{Key: "updatedAt", Value: time.Now().UTC()}}},
+	}
+	options := options.FindOneAndUpdate().SetReturnDocument(options.After)
+
+	if err := repo.Collection.FindOneAndUpdate(ctx, filter, update, options).Decode(&result); err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			panic(domainErrors.NewOptimisticLockError(fmt.Sprintf("Document with id - {%v} - has already been modified", document.Id)))
+		}
+		repo.Logger.Error("Could not update document", zap.Any("Document", document), zap.Error(err))
+		errChan <- err
+	} else {
+		resultChan <- &result
+	}
 }
