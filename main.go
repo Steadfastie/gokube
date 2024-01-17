@@ -76,7 +76,12 @@ func main() {
 	var api = router.Group("/api")
 	{
 		api.GET("/panic/:type", handlers.PanicHandler)
-		api.POST("/counter", counterController.CreateHandler)
+		counter := api.Group("/counter")
+		{
+			counter.GET(":id", counterController.GetByIdHandler)
+			counter.POST("", counterController.CreateHandler)
+		}
+
 	}
 	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))

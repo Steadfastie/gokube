@@ -1,5 +1,23 @@
 basePath: /api
 definitions:
+  data.CounterDocument:
+    properties:
+      counter:
+        example: 5
+        type: integer
+      createdAt:
+        example: 2022-02-30T12:00:00Z
+        type: string
+      id:
+        example: 60c7c02ea38e3c3c4426c1bd
+        type: string
+      updatedAt:
+        example: 2022-02-30T12:00:00Z
+        type: string
+      version:
+        example: 2
+        type: integer
+    type: object
   errors.HTTPError:
     properties:
       code:
@@ -27,10 +45,46 @@ paths:
       - application/json
       responses:
         "200":
-          description: OK
+          description: ID of the created counter object
           schema:
             type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "404":
+          description: Counter not found
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
       summary: creates a basic structure of the project
+      tags:
+      - counter
+  /counter/{id}:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Counter ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Requested counter
+          schema:
+            $ref: '#/definitions/data.CounterDocument'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "404":
+          description: Counter not found
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: retrieves a counter by id from database
       tags:
       - counter
   /panic/{type}:

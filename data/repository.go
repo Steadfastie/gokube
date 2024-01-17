@@ -47,7 +47,7 @@ func (repo *counterRepository) GetById(ctx context.Context, id string, resultCha
 
 	if err := repo.Collection.FindOne(ctx, filter).Decode(&result); err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			repo.Logger.Error("Could not find document with id", zap.Any("id", objectID))
+			panic(domainErrors.NewNotFoundError("CounterDocument", id))
 		}
 		errChan <- err
 	}
