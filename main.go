@@ -80,6 +80,7 @@ func main() {
 		{
 			counter.GET(":id", counterController.GetByIdHandler)
 			counter.POST("", counterController.CreateHandler)
+			counter.PATCH(":id", counterController.PatchHandler)
 		}
 
 	}

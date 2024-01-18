@@ -92,6 +92,56 @@ const docTemplate = `{
                         }
                     }
                 }
+            },
+            "patch": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "counter"
+                ],
+                "summary": "changes counter value",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Counter ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Describe your desires",
+                        "name": "patch",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.PatchModel"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ID of the created counter object",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "Counter not found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HTTPError"
+                        }
+                    }
+                }
             }
         },
         "/panic/{type}": {
@@ -154,13 +204,13 @@ const docTemplate = `{
                     "type": "string",
                     "example": "60c7c02ea38e3c3c4426c1bd"
                 },
+                "omitempty": {
+                    "type": "string",
+                    "example": "user"
+                },
                 "updatedAt": {
                     "type": "string",
                     "example": "2022-02-30T12:00:00Z"
-                },
-                "version": {
-                    "type": "integer",
-                    "example": 2
                 }
             }
         },
@@ -174,6 +224,17 @@ const docTemplate = `{
                 "message": {
                     "type": "string",
                     "example": "status bad request"
+                }
+            }
+        },
+        "handlers.PatchModel": {
+            "type": "object",
+            "properties": {
+                "Increase": {
+                    "type": "boolean"
+                },
+                "UpdatedBy": {
+                    "type": "string"
                 }
             }
         }

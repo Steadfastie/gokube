@@ -15,7 +15,7 @@ import (
 	"go.uber.org/zap"
 )
 
-const Collection = "basic"
+const collection = "counter"
 
 type CounterRepository interface {
 	GetById(ctx context.Context, id string, resultChan chan<- *CounterDocument, errChan chan<- error)
@@ -30,7 +30,7 @@ type counterRepository struct {
 
 func NewCounterRepository(mongodb *services.MongoDB, logger *zap.Logger) CounterRepository {
 	return &counterRepository{
-		Collection: mongodb.MongoDB.Collection(Collection),
+		Collection: mongodb.MongoDB.Collection(collection),
 		Logger:     logger,
 	}
 }
@@ -77,6 +77,7 @@ func (repo *counterRepository) Patch(ctx context.Context, document *CounterDocum
 		{Key: "$set", Value: bson.D{{Key: "counter", Value: document.Counter}}},
 		{Key: "$inc", Value: bson.D{{Key: "version", Value: 1}}},
 		{Key: "$set", Value: bson.D{{Key: "updatedAt", Value: time.Now().UTC()}}},
+		{Key: "$set", Value: bson.D{{Key: "updatedBy", Value: document.UpdatedBy}}},
 	}
 	options := options.FindOneAndUpdate().SetReturnDocument(options.After)
 
