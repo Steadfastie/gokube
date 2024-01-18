@@ -40,3 +40,13 @@ func NewBusinessRuleError(details string) *BusinessRuleError {
 		domainError: newDomainError("Business condemns!", details),
 	}
 }
+
+type NotFoundError struct {
+	*domainError
+}
+
+func NewNotFoundError(documentType string, id string) *NotFoundError {
+	return &NotFoundError{
+		domainError: newDomainError("Not found", fmt.Sprintf("Document {%v} with id: {%v}", documentType, id)),
+	}
+}

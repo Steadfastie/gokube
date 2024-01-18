@@ -1,5 +1,23 @@
 basePath: /api
 definitions:
+  data.CounterDocument:
+    properties:
+      counter:
+        example: 5
+        type: integer
+      createdAt:
+        example: 2022-02-30T12:00:00Z
+        type: string
+      id:
+        example: 60c7c02ea38e3c3c4426c1bd
+        type: string
+      omitempty:
+        example: user
+        type: string
+      updatedAt:
+        example: 2022-02-30T12:00:00Z
+        type: string
+    type: object
   errors.HTTPError:
     properties:
       code:
@@ -7,6 +25,13 @@ definitions:
         type: integer
       message:
         example: status bad request
+        type: string
+    type: object
+  handlers.PatchModel:
+    properties:
+      Increase:
+        type: boolean
+      UpdatedBy:
         type: string
     type: object
 externalDocs:
@@ -19,6 +44,89 @@ info:
   title: Swagger for steadfastie/gokube project
   version: "1.0"
 paths:
+  /counter:
+    post:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ID of the created counter object
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "404":
+          description: Counter not found
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: creates a basic structure of the project
+      tags:
+      - counter
+  /counter/{id}:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Counter ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Requested counter
+          schema:
+            $ref: '#/definitions/data.CounterDocument'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "404":
+          description: Counter not found
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: retrieves a counter by id from database
+      tags:
+      - counter
+    patch:
+      consumes:
+      - application/json
+      parameters:
+      - description: Counter ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Describe your desires
+        in: body
+        name: patch
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.PatchModel'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ID of the created counter object
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+        "404":
+          description: Counter not found
+          schema:
+            $ref: '#/definitions/errors.HTTPError'
+      summary: changes counter value
+      tags:
+      - counter
   /panic/{type}:
     get:
       consumes:
@@ -47,20 +155,6 @@ paths:
       summary: throws a panic
       tags:
       - panic
-  /ping:
-    get:
-      consumes:
-      - application/json
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            type: string
-      summary: ping entry
-      tags:
-      - ping
 securityDefinitions:
   BasicAuth:
     type: basic

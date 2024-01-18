@@ -25,6 +25,8 @@ func GlobalPanicRecovery(c *gin.Context, err any, logger *zap.Logger) {
 		c.AbortWithStatusJSON(http.StatusConflict, gin.H{"error": data.Message, "details": data.Error.Error()})
 	case *errors.BusinessRuleError:
 		c.AbortWithStatusJSON(http.StatusUnprocessableEntity, gin.H{"error": data.Message, "details": data.Error.Error()})
+	case *errors.NotFoundError:
+		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": data.Message, "details": data.Error.Error()})
 	default:
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Something went wrong"})
 	}

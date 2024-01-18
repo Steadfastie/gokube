@@ -15,66 +15,47 @@ import (
 	"go.uber.org/zap"
 )
 
-const Collection = "basic"
+const collection = "counter"
 
-type BasicRepository interface {
-	GetById(ctx context.Context, id string, resultChan chan<- *BasicDocument, errChan chan<- error)
+type CounterRepository interface {
+	GetById(ctx context.Context, id string, resultChan chan<- *CounterDocument, errChan chan<- error)
 	Create(ctx context.Context, resultChan chan<- primitive.ObjectID, errChan chan<- error)
-	Patch(ctx context.Context, document *BasicDocument, resultChan chan<- *BasicDocument, errChan chan<- error)
+	Patch(ctx context.Context, document *CounterDocument, resultChan chan<- *CounterDocument, errChan chan<- error)
 }
 
-type basicRepository struct {
+type counterRepository struct {
 	Collection *mongo.Collection
 	Logger     *zap.Logger
 }
 
-func NewBasicRepository(mongodb *services.MongoDB, logger *zap.Logger) BasicRepository {
-	return &basicRepository{
-		Collection: mongodb.MongoDB.Collection(Collection),
+func NewCounterRepository(mongodb *services.MongoDB, logger *zap.Logger) CounterRepository {
+	return &counterRepository{
+		Collection: mongodb.MongoDB.Collection(collection),
 		Logger:     logger,
 	}
 }
 
-type BasicDocument struct {
-	Id        primitive.ObjectID `bson:"_id"`
-	Counter   int
-	Version   int
-	CreatedAt time.Time
-	UpdatedAt time.Time
-}
-
-func NewBasicDocument() *BasicDocument {
-	now := time.Now().UTC()
-	return &BasicDocument{
-		Id:        primitive.NewObjectID(),
-		Counter:   0,
-		Version:   0,
-		CreatedAt: now,
-		UpdatedAt: now,
-	}
-}
-
-func (repo *basicRepository) GetById(ctx context.Context, id string, resultChan chan<- *BasicDocument, errChan chan<- error) {
+func (repo *counterRepository) GetById(ctx context.Context, id string, resultChan chan<- *CounterDocument, errChan chan<- error) {
 	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		errChan <- err
 		return
 	}
 
-	var result BasicDocument
+	var result CounterDocument
 	filter := bson.M{"_id": objectID}
 
 	if err := repo.Collection.FindOne(ctx, filter).Decode(&result); err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			repo.Logger.Error("Could not find document with id", zap.Any("id", objectID))
+			panic(domainErrors.NewNotFoundError("CounterDocument", id))
 		}
 		errChan <- err
 	}
 	resultChan <- &result
 }
 
-func (repo *basicRepository) Create(ctx context.Context, resultChan chan<- primitive.ObjectID, errChan chan<- error) {
-	document := NewBasicDocument()
+func (repo *counterRepository) Create(ctx context.Context, resultChan chan<- primitive.ObjectID, errChan chan<- error) {
+	document := NewCounterDocument()
 
 	result, err := repo.Collection.InsertOne(ctx, document)
 	if err != nil {
@@ -88,14 +69,15 @@ func (repo *basicRepository) Create(ctx context.Context, resultChan chan<- primi
 	}
 }
 
-func (repo *basicRepository) Patch(ctx context.Context, document *BasicDocument, resultChan chan<- *BasicDocument, errChan chan<- error) {
-	var result BasicDocument
+func (repo *counterRepository) Patch(ctx context.Context, document *CounterDocument, resultChan chan<- *CounterDocument, errChan chan<- error) {
+	var result CounterDocument
 
 	filter := bson.D{{Key: "_id", Value: document.Id}, {Key: "version", Value: document.Version}}
 	update := bson.D{
 		{Key: "$set", Value: bson.D{{Key: "counter", Value: document.Counter}}},
 		{Key: "$inc", Value: bson.D{{Key: "version", Value: 1}}},
 		{Key: "$set", Value: bson.D{{Key: "updatedAt", Value: time.Now().UTC()}}},
+		{Key: "$set", Value: bson.D{{Key: "updatedBy", Value: document.UpdatedBy}}},
 	}
 	options := options.FindOneAndUpdate().SetReturnDocument(options.After)
 
