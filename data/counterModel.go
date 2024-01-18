@@ -9,7 +9,7 @@ import (
 type CounterDocument struct {
 	Id        primitive.ObjectID `bson:"_id" example:"60c7c02ea38e3c3c4426c1bd"`
 	Counter   int                `example:"5"`
-	Version   int                `json:"-" example:"2"`
+	Version   uint               `json:"-" example:"2"`
 	CreatedAt time.Time          `bson:"createdAt" example:"2022-02-30T12:00:00Z"`
 	UpdatedAt time.Time          `bson:"updatedAt" example:"2022-02-30T12:00:00Z"`
 	UpdatedBy string             `bson:"updatedBy,omitempty" json:"updatedBy,omitempty" example:"user"`
