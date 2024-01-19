@@ -1,6 +1,6 @@
 basePath: /api
 definitions:
-  data.CounterDocument:
+  data.CounterResponse:
     properties:
       counter:
         example: 5
@@ -11,11 +11,17 @@ definitions:
       id:
         example: 60c7c02ea38e3c3c4426c1bd
         type: string
-      omitempty:
-        example: user
-        type: string
       updatedAt:
         example: 2022-02-30T12:00:00Z
+        type: string
+    type: object
+  data.PatchCounterResponse:
+    type: object
+  data.PatchModel:
+    properties:
+      Increase:
+        type: boolean
+      UpdatedBy:
         type: string
     type: object
   errors.HTTPError:
@@ -25,13 +31,6 @@ definitions:
         type: integer
       message:
         example: status bad request
-        type: string
-    type: object
-  handlers.PatchModel:
-    properties:
-      Increase:
-        type: boolean
-      UpdatedBy:
         type: string
     type: object
 externalDocs:
@@ -82,7 +81,7 @@ paths:
         "200":
           description: Requested counter
           schema:
-            $ref: '#/definitions/data.CounterDocument'
+            $ref: '#/definitions/data.CounterResponse'
         "400":
           description: Bad Request
           schema:
@@ -108,14 +107,14 @@ paths:
         name: patch
         required: true
         schema:
-          $ref: '#/definitions/handlers.PatchModel'
+          $ref: '#/definitions/data.PatchModel'
       produces:
       - application/json
       responses:
         "200":
           description: ID of the created counter object
           schema:
-            type: string
+            $ref: '#/definitions/data.PatchCounterResponse'
         "400":
           description: Bad Request
           schema:

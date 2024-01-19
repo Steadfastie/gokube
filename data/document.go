@@ -1,15 +1,19 @@
 package data
 
+import "go.mongodb.org/mongo-driver/bson/primitive"
+
 type DomainDocument interface{}
 
 type Document struct {
-	document DomainDocument
-	outbox   OutboxBucket
+	Id       primitive.ObjectID `bson:"_id"`
+	Document DomainDocument     `bson:"document"`
+	Outbox   OutboxBucket       `bson:"outbox"`
 }
 
-func NewDocument(data DomainDocument) *Document {
+func NewDocument(data DomainDocument, id primitive.ObjectID) *Document {
 	return &Document{
-		document: data,
-		outbox:   OutboxBucket{},
+		Id:       id,
+		Document: data,
+		Outbox:   *NewOutboxBucket(),
 	}
 }

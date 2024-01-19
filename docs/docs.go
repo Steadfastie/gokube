@@ -76,7 +76,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Requested counter",
                         "schema": {
-                            "$ref": "#/definitions/data.CounterDocument"
+                            "$ref": "#/definitions/data.CounterResponse"
                         }
                     },
                     "400": {
@@ -118,7 +118,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handlers.PatchModel"
+                            "$ref": "#/definitions/data.PatchModel"
                         }
                     }
                 ],
@@ -126,7 +126,7 @@ const docTemplate = `{
                     "200": {
                         "description": "ID of the created counter object",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/data.PatchCounterResponse"
                         }
                     },
                     "400": {
@@ -189,7 +189,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "data.CounterDocument": {
+        "data.CounterResponse": {
             "type": "object",
             "properties": {
                 "counter": {
@@ -204,13 +204,23 @@ const docTemplate = `{
                     "type": "string",
                     "example": "60c7c02ea38e3c3c4426c1bd"
                 },
-                "omitempty": {
-                    "type": "string",
-                    "example": "user"
-                },
                 "updatedAt": {
                     "type": "string",
                     "example": "2022-02-30T12:00:00Z"
+                }
+            }
+        },
+        "data.PatchCounterResponse": {
+            "type": "object"
+        },
+        "data.PatchModel": {
+            "type": "object",
+            "properties": {
+                "Increase": {
+                    "type": "boolean"
+                },
+                "UpdatedBy": {
+                    "type": "string"
                 }
             }
         },
@@ -224,17 +234,6 @@ const docTemplate = `{
                 "message": {
                     "type": "string",
                     "example": "status bad request"
-                }
-            }
-        },
-        "handlers.PatchModel": {
-            "type": "object",
-            "properties": {
-                "Increase": {
-                    "type": "boolean"
-                },
-                "UpdatedBy": {
-                    "type": "string"
                 }
             }
         }
