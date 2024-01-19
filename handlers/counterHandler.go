@@ -21,7 +21,7 @@ type CounterController struct {
 //
 //	@Param		id	path		string					true	"Counter ID"
 //
-//	@Success	200	{object}	data.CounterDocument	"Requested counter"
+//	@Success	200	{object}	data.CounterResponse	"Requested counter"
 //	@Failure	400	{object}	errors.HTTPError
 //	@Failure	404	{object}	errors.HTTPError	"Counter not found"
 //	@Router		/counter/{id} [get]
@@ -36,7 +36,7 @@ func (controller *CounterController) GetByIdHandler(gc *gin.Context) {
 
 	select {
 	case foundCounter := <-resultChan:
-		gc.JSON(200, gin.H{"counter": foundCounter})
+		gc.JSON(200, foundCounter.MapToResponseModel())
 	case err := <-errChan:
 		gc.JSON(400, err)
 	}
@@ -63,7 +63,7 @@ func (controller *CounterController) CreateHandler(gc *gin.Context) {
 
 	select {
 	case resultID := <-resultChan:
-		gc.JSON(200, gin.H{"id": resultID})
+		gc.JSON(200, resultID.Hex())
 	case err := <-errChan:
 		gc.JSON(400, err)
 	}
@@ -75,14 +75,14 @@ func (controller *CounterController) CreateHandler(gc *gin.Context) {
 //	@Tags		counter
 //	@Accept		json
 //	@Produce	json
-//	@Param		id		path		string		true	"Counter ID"
-//	@Param		patch	body		PatchModel	true	"Describe your desires"
-//	@Success	200		{string}	id			"ID of the created counter object"
+//	@Param		id		path		string						true	"Counter ID"
+//	@Param		patch	body		data.PatchModel				true	"Describe your desires"
+//	@Success	200		{object}	data.PatchCounterResponse	"ID of the created counter object"
 //	@Failure	400		{object}	errors.HTTPError
 //	@Failure	404		{object}	errors.HTTPError	"Counter not found"
 //	@Router		/counter/{id} [patch]
 func (controller *CounterController) PatchHandler(gc *gin.Context) {
-	var patchModel PatchModel
+	var patchModel data.PatchModel
 
 	if err := gc.ShouldBindJSON(&patchModel); err != nil {
 		gc.JSON(400, err)
@@ -111,11 +111,11 @@ func (controller *CounterController) PatchHandler(gc *gin.Context) {
 		defer close(patchResultChan)
 		defer close(patchErrChan)
 
-		go controller.Repository.Patch(gc, foundCounterCopy, patchResultChan, patchErrChan)
+		go controller.Repository.Patch(gc, foundCounterCopy, &patchModel, patchResultChan, patchErrChan)
 
 		select {
 		case patchedCounter := <-patchResultChan:
-			gc.JSON(200, gin.H{"before": foundCounter, "after": patchedCounter})
+			gc.JSON(200, data.CreatePatchResponseModel(foundCounter, patchedCounter))
 		case err := <-patchErrChan:
 			gc.JSON(400, err)
 		}

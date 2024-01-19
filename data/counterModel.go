@@ -7,16 +7,15 @@ import (
 )
 
 type CounterDocument struct {
-	Id        primitive.ObjectID `bson:"_id" example:"60c7c02ea38e3c3c4426c1bd"`
-	Counter   int                `example:"5"`
-	Version   int                `json:"-" example:"2"`
-	CreatedAt time.Time          `bson:"createdAt" example:"2022-02-30T12:00:00Z"`
-	UpdatedAt time.Time          `bson:"updatedAt" example:"2022-02-30T12:00:00Z"`
-	UpdatedBy string             `bson:"updatedBy,omitempty" json:"updatedBy,omitempty" example:"user"`
+	Id        primitive.ObjectID `bson:"_id"`
+	Counter   int
+	Version   uint
+	CreatedAt time.Time `bson:"createdAt"`
+	UpdatedAt time.Time `bson:"updatedAt"`
+	UpdatedBy string    `bson:"updatedBy,omitempty"`
 }
 
-func NewCounterDocument() *CounterDocument {
-	now := time.Now().UTC()
+func NewCounterDocument(now time.Time) *CounterDocument {
 	return &CounterDocument{
 		Id:        primitive.NewObjectID(),
 		Counter:   0,
@@ -47,4 +46,32 @@ func (document *CounterDocument) DecreaseCounter(updatedBy string) {
 	document.Counter--
 	document.UpdatedAt = time.Now().UTC()
 	document.UpdatedBy = updatedBy
+}
+
+type CounterResponse struct {
+	Id        primitive.ObjectID `example:"60c7c02ea38e3c3c4426c1bd"`
+	Counter   int                `example:"5"`
+	CreatedAt time.Time          `example:"2022-02-30T12:00:00Z"`
+	UpdatedAt time.Time          `example:"2022-02-30T12:00:00Z"`
+}
+
+func (document *CounterDocument) MapToResponseModel() *CounterResponse {
+	return &CounterResponse{
+		Id:        document.Id,
+		Counter:   document.Counter,
+		CreatedAt: document.CreatedAt,
+		UpdatedAt: document.UpdatedAt,
+	}
+}
+
+type PatchCounterResponse struct {
+	Before *CounterResponse `json:"before"`
+	After  *CounterResponse `json:"after"`
+}
+
+func CreatePatchResponseModel(before *CounterDocument, after *CounterDocument) *PatchCounterResponse {
+	return &PatchCounterResponse{
+		Before: before.MapToResponseModel(),
+		After:  after.MapToResponseModel(),
+	}
 }

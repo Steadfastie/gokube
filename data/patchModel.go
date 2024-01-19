@@ -1,4 +1,4 @@
-package handlers
+package data
 
 type PatchModel struct {
 	Increase  bool   `form:"Increase"`
