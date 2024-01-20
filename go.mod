@@ -3,8 +3,11 @@ module github.com/steadfastie/gokube
 go 1.21.5
 
 require (
+	github.com/avast/retry-go v3.0.0+incompatible
+	github.com/gin-contrib/cors v1.5.0
 	github.com/gin-gonic/gin v1.9.1
 	github.com/golobby/container/v3 v3.3.2
+	github.com/gwatts/gin-adapter v1.0.0
 	github.com/prometheus/client_golang v1.17.0
 	github.com/swaggo/files v1.0.1
 	github.com/swaggo/gin-swagger v1.6.0
@@ -13,9 +16,11 @@ require (
 	go.uber.org/zap v1.26.0
 )
 
+require gopkg.in/go-jose/go-jose.v2 v2.6.1 // indirect
+
 require (
 	github.com/KyleBanks/depth v1.2.1 // indirect
-	github.com/avast/retry-go v3.0.0+incompatible // indirect
+	github.com/auth0/go-jwt-middleware/v2 v2.2.0
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bytedance/sonic v1.10.2 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect

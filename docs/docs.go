@@ -211,7 +211,15 @@ const docTemplate = `{
             }
         },
         "data.PatchCounterResponse": {
-            "type": "object"
+            "type": "object",
+            "properties": {
+                "after": {
+                    "$ref": "#/definitions/data.CounterResponse"
+                },
+                "before": {
+                    "$ref": "#/definitions/data.CounterResponse"
+                }
+            }
         },
         "data.PatchModel": {
             "type": "object",
@@ -239,8 +247,16 @@ const docTemplate = `{
         }
     },
     "securityDefinitions": {
-        "BasicAuth": {
-            "type": "basic"
+        "OAuth2AccessCode": {
+            "type": "oauth2",
+            "flow": "accessCode",
+            "authorizationUrl": "https://gokube.eu.auth0.com/authorize",
+            "tokenUrl": "https://gokube.eu.auth0.com/oauth/token",
+            "scopes": {
+                "create:counter": "\t\t\t\t\tGrants access to counter post request",
+                "read:counter": "\t\t\t\t\t\tGrants access to counter get request",
+                "update:counter": "\t\t\t\t\tGrants access to counter patch request"
+            }
         }
     },
     "externalDocs": {

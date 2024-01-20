@@ -50,7 +50,12 @@ func metricsHandlerFunc(c *gin.Context) {
 //	@host		localhost:8080
 //	@BasePath	/api
 
-//	@securityDefinitions.basic	BasicAuth
+//	@securitydefinitions.oauth2.accessCode	OAuth2AccessCode
+//	@tokenUrl								https://gokube.eu.auth0.com/oauth/token
+//	@authorizationurl						https://gokube.eu.auth0.com/authorize
+//	@scope.read:counter						Grants access to counter get request
+//	@scope.create:counter					Grants access to counter post request
+//	@scope.update:counter					Grants access to counter patch request
 
 // @externalDocs.description	GitHub repository
 // @externalDocs.url			https://github.com/Steadfastie/gokube
@@ -67,6 +72,7 @@ func main() {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
+	// router.Use(cors.New(cors.DefaultConfig()))
 	router.Use(metricsHandlerFunc)
 	router.Use(gin.RecoveryWithWriter(gin.DefaultErrorWriter, infra.RecoveryMiddleware))
 
@@ -78,11 +84,12 @@ func main() {
 		api.GET("/panic/:type", handlers.PanicHandler)
 		counter := api.Group("/counter")
 		{
-			counter.GET(":id", counterController.GetByIdHandler)
-			counter.POST("", counterController.CreateHandler)
-			counter.PATCH(":id", counterController.PatchHandler)
-		}
+			counter.Use(infra.AuthMiddleware)
 
+			counter.GET(":id", infra.RequireScope(infra.ReadCounterScope), counterController.GetByIdHandler)
+			counter.POST("", infra.RequireScope(infra.CreateCounterScope), counterController.CreateHandler)
+			counter.PATCH(":id", infra.RequireScope(infra.UpdateCounterScope), counterController.PatchHandler)
+		}
 	}
 	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
