@@ -88,38 +88,18 @@ func (controller *CounterController) PatchHandler(gc *gin.Context) {
 		gc.JSON(400, err)
 	}
 
-	getResultChan := make(chan *data.CounterDocument)
-	getErrChan := make(chan error)
+	resultChan := make(chan *data.PatchCounterResponse)
+	errChan := make(chan error)
 
-	defer close(getResultChan)
-	defer close(getErrChan)
+	defer close(resultChan)
+	defer close(errChan)
 
-	go controller.Repository.GetById(gc, gc.Param("id"), getResultChan, getErrChan)
+	go controller.Repository.Patch(gc, gc.Param("id"), &patchModel, resultChan, errChan)
 
 	select {
-	case foundCounter := <-getResultChan:
-		var foundCounterCopy = foundCounter.Copy()
-		if patchModel.Increase {
-			foundCounterCopy.IncreaseCounter(patchModel.UpdatedBy)
-		} else {
-			foundCounterCopy.DecreaseCounter(patchModel.UpdatedBy)
-		}
-
-		patchResultChan := make(chan *data.CounterDocument)
-		patchErrChan := make(chan error)
-
-		defer close(patchResultChan)
-		defer close(patchErrChan)
-
-		go controller.Repository.Patch(gc, foundCounterCopy, &patchModel, patchResultChan, patchErrChan)
-
-		select {
-		case patchedCounter := <-patchResultChan:
-			gc.JSON(200, data.CreatePatchResponseModel(foundCounter, patchedCounter))
-		case err := <-patchErrChan:
-			gc.JSON(400, err)
-		}
-	case err := <-getErrChan:
+	case patchResult := <-resultChan:
+		gc.JSON(200, patchResult)
+	case err := <-errChan:
 		gc.JSON(400, err)
 	}
 }

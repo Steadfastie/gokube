@@ -20,7 +20,8 @@ const collection = "counter"
 type CounterRepository interface {
 	GetById(ctx context.Context, id string, resultChan chan<- *CounterDocument, errChan chan<- error)
 	Create(ctx context.Context, resultChan chan<- primitive.ObjectID, errChan chan<- error)
-	Patch(ctx context.Context, document *CounterDocument, patchModel *PatchModel, resultChan chan<- *CounterDocument, errChan chan<- error)
+	PatchOld(ctx context.Context, document *CounterDocument, resultChan chan<- *CounterDocument, errChan chan<- error)
+	Patch(ctx context.Context, id string, patch *PatchModel, resultChan chan<- *PatchCounterResponse, errChan chan<- error)
 }
 
 type counterRepository struct {
@@ -50,7 +51,7 @@ func (repo *counterRepository) GetById(ctx context.Context, id string, resultCha
 
 	if err := repo.Collection.FindOne(ctx, filter, opts).Decode(&result); err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			panic(domainErrors.NewNotFoundError("CounterDocument", id))
+			panic(domainErrors.NewNotFoundError("Counter", id))
 		}
 		errChan <- err
 	}
@@ -78,12 +79,12 @@ func (repo *counterRepository) Create(ctx context.Context, resultChan chan<- pri
 	}
 }
 
-func (repo *counterRepository) Patch(ctx context.Context, document *CounterDocument, patchModel *PatchModel, resultChan chan<- *CounterDocument, errChan chan<- error) {
+func (repo *counterRepository) PatchOld(ctx context.Context, document *CounterDocument, resultChan chan<- *CounterDocument, errChan chan<- error) {
 	var result struct {
 		Document CounterDocument `bson:"document"`
 	}
 	now := time.Now().UTC()
-	event := NewCounterUpdatedEvent(patchModel.Increase, patchModel.UpdatedBy)
+	event := NewCounterUpdatedEvent(document.Counter, document.UpdatedBy)
 	outbox := NewOutboxEvent(event, now)
 
 	filter := bson.D{{Key: "_id", Value: document.Id}, {Key: "document.version", Value: document.Version}}
@@ -96,12 +97,93 @@ func (repo *counterRepository) Patch(ctx context.Context, document *CounterDocum
 	}
 	options := options.FindOneAndUpdate().SetProjection(bson.D{{Key: "document", Value: 1}}).SetReturnDocument(options.After)
 
-	if err := repo.Collection.FindOneAndUpdate(ctx, filter, update, options).Decode(&result); err != nil {
+	retryConfig := &RetryConfig{
+		Context:          ctx,
+		Logger:           repo.Logger,
+		RecoverableError: mongo.ErrNoDocuments,
+	}
+
+	err := WithRetry(retryConfig, func() error {
+		return repo.Collection.FindOneAndUpdate(ctx, filter, update, options).Decode(&result)
+	})
+	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			panic(domainErrors.NewOptimisticLockError(fmt.Sprintf("Document with id - {%v} - has already been modified", document.Id)))
+			panic(domainErrors.NewOptimisticLockError(fmt.Sprintf("Document %v has already been updated", document.Id)))
 		}
 		repo.Logger.Error("Could not update document", zap.Any("Document", document), zap.Error(err))
 		errChan <- err
 	}
 	resultChan <- &result.Document
+}
+
+func (repo *counterRepository) Patch(ctx context.Context, id string, patch *PatchModel, resultChan chan<- *PatchCounterResponse, errChan chan<- error) {
+	objectID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		errChan <- err
+		return
+	}
+
+	retryConfig := &RetryConfig{
+		Context:          ctx,
+		Logger:           repo.Logger,
+		RecoverableError: mongo.ErrNoDocuments,
+	}
+
+	err = WithRetry(retryConfig, func() error {
+		return repo.findOneAndUpdate(ctx, objectID, patch, resultChan)
+	})
+
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			panic(domainErrors.NewOptimisticLockError(fmt.Sprintf("Could not update document %v due to high service load", id)))
+		}
+		errChan <- err
+	}
+}
+
+func (repo *counterRepository) findOneAndUpdate(ctx context.Context, id primitive.ObjectID, patch *PatchModel, resultChan chan<- *PatchCounterResponse) error {
+	var counterBefore struct {
+		Document CounterDocument `bson:"document"`
+	}
+
+	filter := bson.M{"_id": id}
+	opts := options.FindOne().SetProjection(bson.D{{Key: "document", Value: 1}})
+
+	if err := repo.Collection.FindOne(ctx, filter, opts).Decode(&counterBefore); err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			panic(domainErrors.NewNotFoundError("Counter", id.Hex()))
+		}
+		return err
+	}
+
+	var counterUpdate = counterBefore.Document.Copy()
+	if patch.Increase {
+		counterUpdate.IncreaseCounter(patch.UpdatedBy)
+	} else {
+		counterUpdate.DecreaseCounter(patch.UpdatedBy)
+	}
+
+	var counterAfter struct {
+		Document CounterDocument `bson:"document"`
+	}
+
+	now := time.Now().UTC()
+	event := NewCounterUpdatedEvent(counterUpdate.Counter, counterUpdate.UpdatedBy)
+	outbox := NewOutboxEvent(event, now)
+
+	updateFilter := bson.D{{Key: "_id", Value: counterUpdate.Id}, {Key: "document.version", Value: counterBefore.Document.Version}}
+	update := bson.D{
+		{Key: "$set", Value: bson.D{{Key: "document.counter", Value: counterUpdate.Counter}}},
+		{Key: "$set", Value: bson.D{{Key: "document.updatedAt", Value: now}}},
+		{Key: "$set", Value: bson.D{{Key: "document.updatedBy", Value: counterUpdate.UpdatedBy}}},
+		{Key: "$inc", Value: bson.D{{Key: "document.version", Value: 1}}},
+		{Key: "$addToSet", Value: bson.D{{Key: "outbox.events", Value: outbox}}},
+	}
+	options := options.FindOneAndUpdate().SetProjection(bson.D{{Key: "document", Value: 1}}).SetReturnDocument(options.After)
+
+	if err := repo.Collection.FindOneAndUpdate(ctx, updateFilter, update, options).Decode(&counterAfter); err != nil {
+		return err
+	}
+	resultChan <- CreatePatchCounterResponse(&counterBefore.Document, &counterAfter.Document)
+	return nil
 }
