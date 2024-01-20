@@ -69,7 +69,7 @@ type PatchCounterResponse struct {
 	After  *CounterResponse `json:"after"`
 }
 
-func CreatePatchResponseModel(before *CounterDocument, after *CounterDocument) *PatchCounterResponse {
+func CreatePatchCounterResponse(before *CounterDocument, after *CounterDocument) *PatchCounterResponse {
 	return &PatchCounterResponse{
 		Before: before.MapToResponseModel(),
 		After:  after.MapToResponseModel(),

@@ -25,14 +25,14 @@ func NewCounterCreatedEvent() *CounterCreatedEvent {
 
 type CounterUpdatedEvent struct {
 	Type      EventType `bson:"type"`
-	Increased bool      `bson:"increased"`
+	Counter   int       `bson:"counter"`
 	UpdatedBy string    `bson:"updatedBy"`
 }
 
-func NewCounterUpdatedEvent(increased bool, updatedBy string) *CounterUpdatedEvent {
+func NewCounterUpdatedEvent(counter int, updatedBy string) *CounterUpdatedEvent {
 	return &CounterUpdatedEvent{
 		Type:      CounterUpdated,
-		Increased: increased,
+		Counter:   counter,
 		UpdatedBy: updatedBy,
 	}
 }
