@@ -20,7 +20,6 @@ const collection = "counter"
 type CounterRepository interface {
 	GetById(ctx context.Context, id string, resultChan chan<- *CounterDocument, errChan chan<- error)
 	Create(ctx context.Context, resultChan chan<- primitive.ObjectID, errChan chan<- error)
-	PatchOld(ctx context.Context, document *CounterDocument, resultChan chan<- *CounterDocument, errChan chan<- error)
 	Patch(ctx context.Context, id string, patch *PatchModel, resultChan chan<- *PatchCounterResponse, errChan chan<- error)
 }
 
@@ -77,43 +76,6 @@ func (repo *counterRepository) Create(ctx context.Context, resultChan chan<- pri
 	} else {
 		resultChan <- result.InsertedID.(primitive.ObjectID)
 	}
-}
-
-func (repo *counterRepository) PatchOld(ctx context.Context, document *CounterDocument, resultChan chan<- *CounterDocument, errChan chan<- error) {
-	var result struct {
-		Document CounterDocument `bson:"document"`
-	}
-	now := time.Now().UTC()
-	event := NewCounterUpdatedEvent(document.Counter, document.UpdatedBy)
-	outbox := NewOutboxEvent(event, now)
-
-	filter := bson.D{{Key: "_id", Value: document.Id}, {Key: "document.version", Value: document.Version}}
-	update := bson.D{
-		{Key: "$set", Value: bson.D{{Key: "document.counter", Value: document.Counter}}},
-		{Key: "$inc", Value: bson.D{{Key: "document.version", Value: 1}}},
-		{Key: "$set", Value: bson.D{{Key: "document.updatedAt", Value: now}}},
-		{Key: "$set", Value: bson.D{{Key: "document.updatedBy", Value: document.UpdatedBy}}},
-		{Key: "$addToSet", Value: bson.D{{Key: "outbox.events", Value: outbox}}},
-	}
-	options := options.FindOneAndUpdate().SetProjection(bson.D{{Key: "document", Value: 1}}).SetReturnDocument(options.After)
-
-	retryConfig := &RetryConfig{
-		Context:          ctx,
-		Logger:           repo.Logger,
-		RecoverableError: mongo.ErrNoDocuments,
-	}
-
-	err := WithRetry(retryConfig, func() error {
-		return repo.Collection.FindOneAndUpdate(ctx, filter, update, options).Decode(&result)
-	})
-	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			panic(domainErrors.NewOptimisticLockError(fmt.Sprintf("Document %v has already been updated", document.Id)))
-		}
-		repo.Logger.Error("Could not update document", zap.Any("Document", document), zap.Error(err))
-		errChan <- err
-	}
-	resultChan <- &result.Document
 }
 
 func (repo *counterRepository) Patch(ctx context.Context, id string, patch *PatchModel, resultChan chan<- *PatchCounterResponse, errChan chan<- error) {

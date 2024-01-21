@@ -53,6 +53,11 @@ const docTemplate = `{
         },
         "/counter/{id}": {
             "get": {
+                "security": [
+                    {
+                        "OAuth2AccessCode": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -248,6 +253,7 @@ const docTemplate = `{
     },
     "securityDefinitions": {
         "OAuth2AccessCode": {
+            "description": "OAuth protections",
             "type": "oauth2",
             "flow": "accessCode",
             "authorizationUrl": "https://gokube.eu.auth0.com/authorize",

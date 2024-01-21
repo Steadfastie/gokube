@@ -18,9 +18,8 @@ type CounterController struct {
 //	@Tags		counter
 //	@Accept		json
 //	@Produce	json
-//
+//	@Security	OAuth2AccessCode
 //	@Param		id	path		string					true	"Counter ID"
-//
 //	@Success	200	{object}	data.CounterResponse	"Requested counter"
 //	@Failure	400	{object}	errors.HTTPError
 //	@Failure	404	{object}	errors.HTTPError	"Counter not found"

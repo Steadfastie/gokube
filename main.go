@@ -53,6 +53,7 @@ func metricsHandlerFunc(c *gin.Context) {
 //	@securitydefinitions.oauth2.accessCode	OAuth2AccessCode
 //	@tokenUrl								https://gokube.eu.auth0.com/oauth/token
 //	@authorizationurl						https://gokube.eu.auth0.com/authorize
+//	@description							OAuth protections
 //	@scope.read:counter						Grants access to counter get request
 //	@scope.create:counter					Grants access to counter post request
 //	@scope.update:counter					Grants access to counter patch request
@@ -65,6 +66,9 @@ func main() {
 
 	infra.InitializeServices(ctx, zap.L())
 	defer infra.DisconnectServices(ctx)
+
+	ginSwagger.Oauth2DefaultClientID("ACT7txznQvbHnwFsN8R4lHzzWNS7dKYp")
+	ginSwagger.PersistAuthorization(true)
 
 	// Create gin router
 	router := gin.Default()
@@ -84,15 +88,15 @@ func main() {
 		api.GET("/panic/:type", handlers.PanicHandler)
 		counter := api.Group("/counter")
 		{
-			counter.Use(infra.AuthMiddleware)
-
-			counter.GET(":id", infra.RequireScope(infra.ReadCounterScope), counterController.GetByIdHandler)
-			counter.POST("", infra.RequireScope(infra.CreateCounterScope), counterController.CreateHandler)
-			counter.PATCH(":id", infra.RequireScope(infra.UpdateCounterScope), counterController.PatchHandler)
+			counter.GET(":id", infra.AuthMiddleware(infra.ReadCounterScope), counterController.GetByIdHandler)
+			counter.POST("", infra.AuthMiddleware(infra.CreateCounterScope), counterController.CreateHandler)
+			counter.PATCH(":id", infra.AuthMiddleware(infra.UpdateCounterScope), counterController.PatchHandler)
 		}
 	}
 	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
+
+	router.NoRoute()
 
 	// Run
 	srv := &http.Server{

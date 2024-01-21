@@ -95,6 +95,8 @@ paths:
           description: Counter not found
           schema:
             $ref: '#/definitions/errors.HTTPError'
+      security:
+      - OAuth2AccessCode: []
       summary: retrieves a counter by id from database
       tags:
       - counter
@@ -162,6 +164,7 @@ paths:
 securityDefinitions:
   OAuth2AccessCode:
     authorizationUrl: https://gokube.eu.auth0.com/authorize
+    description: OAuth protections
     flow: accessCode
     scopes:
       create:counter: "\t\t\t\t\tGrants access to counter post request"

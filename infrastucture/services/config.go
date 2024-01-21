@@ -10,7 +10,7 @@ import (
 )
 
 type Config struct {
-	Auth          AuthSettings  `json:"Auth0Settings"`
+	Auth          AuthSettings  `json:"Auth0"`
 	MongoSettings MongoSettings `json:"MongoSettings"`
 	LogLevel      string        `json:"LogLevel"`
 }
@@ -23,6 +23,7 @@ type MongoSettings struct {
 type AuthSettings struct {
 	Domain   string `json:"Domain"`
 	Audience string `json:"Audience"`
+	Secret   string `json:"ClientSecret"`
 }
 
 func NewConfig(ctx context.Context, logger *zap.Logger) (*Config, error) {
