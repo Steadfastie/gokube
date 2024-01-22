@@ -1,5 +1,5 @@
 
-![gokubelogo](https://github.com/Steadfastie/gokube/assets/68227124/bc68f7b4-a19d-457d-8b00-feb61f9c0d0d)
+![gokubelogo](https://github.com/Steadfastie/gokube/assets/68227124/fa1438bf-7a43-466f-b301-f358fb17fd8d)
 
 # gokube
 Go and K8s mastery
