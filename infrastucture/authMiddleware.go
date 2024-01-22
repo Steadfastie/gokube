@@ -1,9 +1,12 @@
 package infrastucture
 
 import (
+	"encoding/json"
+	"io"
 	"net/http"
 	"strings"
 
+	"github.com/MicahParks/keyfunc/v3"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/golobby/container/v3"
@@ -34,23 +37,24 @@ func AuthMiddleware(requiredScopes ...string) gin.HandlerFunc {
 
 		tokenString := strings.TrimPrefix(authorizationHeader, "Bearer ")
 
+		jwksJSON := retrievePublicKey(c, config.Auth.Domain)
+
+		k, err := keyfunc.NewJWKSetJSON(jwksJSON)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"Message": "Could not retrieve auth public key"})
+		}
+
 		token, err := jwt.ParseWithClaims(
 			tokenString,
 			&Claims{},
-			func(token *jwt.Token) (interface{}, error) {
-				if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-					c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"Error": "Unexpected token signing method"})
-				}
-
-				return []byte(config.Auth.Secret), nil
-			},
-			jwt.WithIssuer(config.Auth.Domain),
+			k.Keyfunc,
+			jwt.WithIssuer("https://"+config.Auth.Domain+"/"),
 			jwt.WithAudience(config.Auth.Audience),
-			jwt.WithValidMethods([]string{"HS256"}),
+			jwt.WithValidMethods([]string{"RS256"}),
 		)
 
 		if err != nil || !token.Valid {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Can't recognize user"})
+			c.AbortWithStatus(http.StatusUnauthorized)
 			return
 		}
 
@@ -79,4 +83,25 @@ func (c Claims) HasScopes(expectedScopes ...string) bool {
 		}
 	}
 	return false
+}
+
+func retrievePublicKey(c *gin.Context, domain string) json.RawMessage {
+	serverUrl := "https://" + domain + "/.well-known/jwks.json"
+	resp, err := http.Get(serverUrl)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusServiceUnavailable, gin.H{"Message": "Auth server connectivity malfucntion"})
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"Message": "Auth server unexpected behavior"})
+	}
+
+	// Read the response body
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"Message": "Auth server connectivity malfucntion"})
+	}
+
+	return json.RawMessage(body)
 }

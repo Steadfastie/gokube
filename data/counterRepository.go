@@ -61,7 +61,7 @@ func (repo *counterRepository) Create(ctx context.Context, resultChan chan<- pri
 	now := time.Now().UTC()
 	counterDocument := NewCounterDocument(now)
 	document := NewDocument(counterDocument, counterDocument.Id)
-	event := NewCounterCreatedEvent()
+	event := NewCounterCreatedEvent(ctx.Value("user").(string))
 	outbox := NewOutboxEvent(event, now)
 
 	document.Outbox.AddEvent(outbox)
@@ -130,7 +130,7 @@ func (repo *counterRepository) findOneAndUpdate(ctx context.Context, id primitiv
 	}
 
 	now := time.Now().UTC()
-	event := NewCounterUpdatedEvent(counterUpdate.Counter, counterUpdate.UpdatedBy)
+	event := NewCounterUpdatedEvent(counterUpdate.Counter, counterUpdate.UpdatedBy, ctx.Value("user").(string))
 	outbox := NewOutboxEvent(event, now)
 
 	updateFilter := bson.D{{Key: "_id", Value: counterUpdate.Id}, {Key: "document.version", Value: counterBefore.Document.Version}}

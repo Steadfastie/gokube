@@ -14,12 +14,14 @@ const (
 )
 
 type CounterCreatedEvent struct {
-	Type EventType `bson:"type"`
+	Type      EventType `bson:"type"`
+	UserAlias string    `bson:"userAlias"`
 }
 
-func NewCounterCreatedEvent() *CounterCreatedEvent {
+func NewCounterCreatedEvent(userAlias string) *CounterCreatedEvent {
 	return &CounterCreatedEvent{
-		Type: CounterCreated,
+		Type:      CounterCreated,
+		UserAlias: userAlias,
 	}
 }
 
@@ -27,13 +29,15 @@ type CounterUpdatedEvent struct {
 	Type      EventType `bson:"type"`
 	Counter   int       `bson:"counter"`
 	UpdatedBy string    `bson:"updatedBy"`
+	UserAlias string    `bson:"userAlias"`
 }
 
-func NewCounterUpdatedEvent(counter int, updatedBy string) *CounterUpdatedEvent {
+func NewCounterUpdatedEvent(counter int, updatedBy string, userAlias string) *CounterUpdatedEvent {
 	return &CounterUpdatedEvent{
 		Type:      CounterUpdated,
 		Counter:   counter,
 		UpdatedBy: updatedBy,
+		UserAlias: userAlias,
 	}
 }
 

@@ -47,6 +47,7 @@ func (controller *CounterController) GetByIdHandler(gc *gin.Context) {
 //	@Tags		counter
 //	@Accept		json
 //	@Produce	json
+//	@Security	OAuth2AccessCode
 //	@Success	200	{string}	id	"ID of the created counter object"
 //	@Failure	400	{object}	errors.HTTPError
 //	@Failure	404	{object}	errors.HTTPError	"Counter not found"
@@ -74,6 +75,7 @@ func (controller *CounterController) CreateHandler(gc *gin.Context) {
 //	@Tags		counter
 //	@Accept		json
 //	@Produce	json
+//	@Security	OAuth2AccessCode
 //	@Param		id		path		string						true	"Counter ID"
 //	@Param		patch	body		data.PatchModel				true	"Describe your desires"
 //	@Success	200		{object}	data.PatchCounterResponse	"ID of the created counter object"

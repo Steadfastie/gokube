@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -67,16 +68,13 @@ func main() {
 	infra.InitializeServices(ctx, zap.L())
 	defer infra.DisconnectServices(ctx)
 
-	ginSwagger.Oauth2DefaultClientID("ACT7txznQvbHnwFsN8R4lHzzWNS7dKYp")
-	ginSwagger.PersistAuthorization(true)
-
 	// Create gin router
 	router := gin.Default()
 	if os.Getenv("APP_ENV") == "production" {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
-	// router.Use(cors.New(cors.DefaultConfig()))
+	router.Use(cors.Default())
 	router.Use(metricsHandlerFunc)
 	router.Use(gin.RecoveryWithWriter(gin.DefaultErrorWriter, infra.RecoveryMiddleware))
 
@@ -90,13 +88,11 @@ func main() {
 		{
 			counter.GET(":id", infra.AuthMiddleware(infra.ReadCounterScope), counterController.GetByIdHandler)
 			counter.POST("", infra.AuthMiddleware(infra.CreateCounterScope), counterController.CreateHandler)
-			counter.PATCH(":id", infra.AuthMiddleware(infra.UpdateCounterScope), counterController.PatchHandler)
+			counter.PATCH(":id", infra.AuthMiddleware(infra.ReadCounterScope, infra.UpdateCounterScope), counterController.PatchHandler)
 		}
 	}
 	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
-
-	router.NoRoute()
 
 	// Run
 	srv := &http.Server{

@@ -67,6 +67,8 @@ paths:
           description: Counter not found
           schema:
             $ref: '#/definitions/errors.HTTPError'
+      security:
+      - OAuth2AccessCode: []
       summary: creates a basic structure of the project
       tags:
       - counter
@@ -130,6 +132,8 @@ paths:
           description: Counter not found
           schema:
             $ref: '#/definitions/errors.HTTPError'
+      security:
+      - OAuth2AccessCode: []
       summary: changes counter value
       tags:
       - counter

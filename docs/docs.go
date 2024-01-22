@@ -19,6 +19,11 @@ const docTemplate = `{
     "paths": {
         "/counter": {
             "post": {
+                "security": [
+                    {
+                        "OAuth2AccessCode": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -99,6 +104,11 @@ const docTemplate = `{
                 }
             },
             "patch": {
+                "security": [
+                    {
+                        "OAuth2AccessCode": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],

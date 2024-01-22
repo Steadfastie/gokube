@@ -1,8 +1,7 @@
 {
   "Auth0":{
     "Domain": "gokube.eu.auth0.com",
-    "Audience": "gokube",
-    "ClientSecret": "QalTT3IOJx5LdTIh_jgMI9r1ZdG8ZcywQ5gcJ8MUXUB8O2xeppwTGVru_K0uIgCo"
+    "Audience": "gokube"
   },
   "MongoSettings": {
     "MongoConnectionString": "localhost:30000/?replicaSet=rs0&directConnection=true",

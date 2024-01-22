@@ -23,7 +23,6 @@ type MongoSettings struct {
 type AuthSettings struct {
 	Domain   string `json:"Domain"`
 	Audience string `json:"Audience"`
-	Secret   string `json:"ClientSecret"`
 }
 
 func NewConfig(ctx context.Context, logger *zap.Logger) (*Config, error) {

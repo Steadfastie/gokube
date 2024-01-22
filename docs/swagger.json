@@ -12,6 +12,11 @@
     "paths": {
         "/counter": {
             "post": {
+                "security": [
+                    {
+                        "OAuth2AccessCode": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -92,6 +97,11 @@
                 }
             },
             "patch": {
+                "security": [
+                    {
+                        "OAuth2AccessCode": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
