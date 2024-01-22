@@ -16,6 +16,11 @@ definitions:
         type: string
     type: object
   data.PatchCounterResponse:
+    properties:
+      after:
+        $ref: '#/definitions/data.CounterResponse'
+      before:
+        $ref: '#/definitions/data.CounterResponse'
     type: object
   data.PatchModel:
     properties:
@@ -62,6 +67,8 @@ paths:
           description: Counter not found
           schema:
             $ref: '#/definitions/errors.HTTPError'
+      security:
+      - OAuth2AccessCode: []
       summary: creates a basic structure of the project
       tags:
       - counter
@@ -90,6 +97,8 @@ paths:
           description: Counter not found
           schema:
             $ref: '#/definitions/errors.HTTPError'
+      security:
+      - OAuth2AccessCode: []
       summary: retrieves a counter by id from database
       tags:
       - counter
@@ -123,6 +132,8 @@ paths:
           description: Counter not found
           schema:
             $ref: '#/definitions/errors.HTTPError'
+      security:
+      - OAuth2AccessCode: []
       summary: changes counter value
       tags:
       - counter
@@ -155,6 +166,14 @@ paths:
       tags:
       - panic
 securityDefinitions:
-  BasicAuth:
-    type: basic
+  OAuth2AccessCode:
+    authorizationUrl: https://gokube.eu.auth0.com/authorize
+    description: OAuth protections
+    flow: accessCode
+    scopes:
+      create:counter: "\t\t\t\t\tGrants access to counter post request"
+      read:counter: "\t\t\t\t\t\tGrants access to counter get request"
+      update:counter: "\t\t\t\t\tGrants access to counter patch request"
+    tokenUrl: https://gokube.eu.auth0.com/oauth/token
+    type: oauth2
 swagger: "2.0"
