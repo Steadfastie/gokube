@@ -47,6 +47,12 @@ type OutboxEvent struct {
 	Timestamp time.Time          `bson:"timestamp"`
 }
 
+type ByTimestamp []OutboxEvent
+
+func (a ByTimestamp) Len() int           { return len(a) }
+func (a ByTimestamp) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a ByTimestamp) Less(i, j int) bool { return a[i].Timestamp.Before(a[j].Timestamp) }
+
 func NewOutboxEvent(event any, now time.Time) *OutboxEvent {
 	return &OutboxEvent{
 		Id:        primitive.NewObjectID(),

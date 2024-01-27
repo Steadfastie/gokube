@@ -1,4 +1,4 @@
-package services
+package infrastructure
 
 import (
 	"context"
@@ -6,18 +6,22 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/steadfastie/gokube/data/services"
 	"go.uber.org/zap"
 )
 
 type Config struct {
-	Auth          AuthSettings  `json:"Auth0"`
-	MongoSettings MongoSettings `json:"MongoSettings"`
-	LogLevel      string        `json:"LogLevel"`
+	Auth          AuthSettings           `json:"Auth0"`
+	MongoSettings services.MongoSettings `json:"MongoSettings"`
+	LogLevel      string                 `json:"LogLevel"`
 }
 
-type MongoSettings struct {
-	MongoConnectionString string `json:"MongoConnectionString"`
-	MongoDatabase         string `json:"MongoDatabase"`
+func (c *Config) GetMongoSettings() services.MongoSettings {
+	return c.MongoSettings
+}
+
+func (c *Config) GetLogLevel() string {
+	return c.LogLevel
 }
 
 type AuthSettings struct {
