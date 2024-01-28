@@ -15,6 +15,10 @@ import (
 	"go.uber.org/zap"
 )
 
+type OutboxProcessor interface {
+	ProcessOutbox(ctx context.Context)
+}
+
 const collection = "counter"
 
 type outboxProcessor struct {
@@ -22,11 +26,15 @@ type outboxProcessor struct {
 	Logger     *zap.Logger
 }
 
-func ProcessOutbox(ctx context.Context, mongodb *services.MongoDB, logger *zap.Logger) {
-	processor := &outboxProcessor{
+func NewOutboxProcessor(mongodb *services.MongoDB, logger *zap.Logger) OutboxProcessor {
+	return &outboxProcessor{
 		Collection: mongodb.MongoDB.Collection(collection),
 		Logger:     logger,
 	}
+}
+
+func (processor *outboxProcessor) ProcessOutbox(ctx context.Context) {
+	processor.Logger.Info("Starting processing")
 	idsChan := make(chan []primitive.ObjectID)
 	errChan := make(chan error)
 
@@ -36,6 +44,7 @@ func ProcessOutbox(ctx context.Context, mongodb *services.MongoDB, logger *zap.L
 	select {
 	case ids := <-idsChan:
 		if len(ids) == 0 {
+			processor.Logger.Info("Outbox job found no events to handle")
 			return
 		}
 		docIdsToHandle = ids
@@ -47,12 +56,13 @@ func ProcessOutbox(ctx context.Context, mongodb *services.MongoDB, logger *zap.L
 	for _, id := range docIdsToHandle {
 		go processor.handleEvents(ctx, id, errChan)
 
-		select {
-		case err := <-errChan:
-			processor.Logger.Error("Outbox job caught error trying handle event", zap.Error(err))
-			return
+		err := <-errChan
+		if err == nil {
+			continue
 		}
+		processor.Logger.Error("Outbox job caught error trying handle event", zap.Error(err))
 	}
+	processor.Logger.Info("Completing processing")
 }
 
 func (processor *outboxProcessor) findDocumentsToProcess(ctx context.Context, resultChan chan<- []primitive.ObjectID, errChan chan<- error) {
@@ -71,7 +81,7 @@ func (processor *outboxProcessor) findDocumentsToProcess(ctx context.Context, re
 	}
 
 	type documentWithId struct {
-		Id primitive.ObjectID `bson:"document"`
+		Id primitive.ObjectID `bson:"_id"`
 	}
 
 	var results []documentWithId
@@ -127,10 +137,9 @@ func (processor *outboxProcessor) handleEvents(ctx context.Context, docId primit
 			continue
 		}
 
-		go processor.removeEvent(ctx, docId, eventChan, errChan)
-
+		go processor.removeEvent(ctx, docId, event.Id, eventChan, errChan)
 	}
-
+	errChan <- nil
 }
 
 type LockOutboxOptions struct {
@@ -177,10 +186,10 @@ func (processor *outboxProcessor) lockOutbox(options *LockOutboxOptions) {
 
 func (processor *outboxProcessor) getEvents(ctx context.Context, docId primitive.ObjectID, resultChan chan<- []data.OutboxEvent, errChan chan<- error) {
 	filter := bson.M{"_id": docId}
-	opts := options.FindOne().SetProjection(bson.D{{Key: "outbox.events", Value: 1}})
+	opts := options.FindOne().SetProjection(bson.D{{Key: "outbox", Value: 1}})
 
 	var result struct {
-		Events []data.OutboxEvent `bson:"events"`
+		Outbox data.OutboxBucket `bson:"outbox"`
 	}
 
 	if err := processor.Collection.FindOne(ctx, filter, opts).Decode(&result); err != nil {
@@ -191,13 +200,32 @@ func (processor *outboxProcessor) getEvents(ctx context.Context, docId primitive
 		errChan <- err
 	}
 
-	resultChan <- result.Events
+	resultChan <- result.Outbox.Events
 }
 
 func (processor *outboxProcessor) handleEvent(ctx context.Context, event *data.OutboxEvent, resultChan chan bool, errChan chan<- error) {
+	switch payload := event.Payload.(type) {
+	case data.CounterCreatedEvent:
+		processor.Logger.Info("Create event has been handled", zap.Any("Event", event), zap.String("Type", string(payload.Type)))
+	case data.CounterUpdatedEvent:
+		processor.Logger.Info("Update event has been handled", zap.Any("Event", event), zap.String("Type", string(payload.Type)))
+	default:
+		processor.Logger.Info("Unknown event has been handled", zap.Any("Event", event))
+	}
 
+	resultChan <- true
 }
 
-func (processor *outboxProcessor) removeEvent(ctx context.Context, docId primitive.ObjectID, resultChan chan bool, errChan chan<- error) {
+func (processor *outboxProcessor) removeEvent(ctx context.Context, docId primitive.ObjectID, eventId primitive.ObjectID, resultChan chan bool, errChan chan<- error) {
+	filter := bson.M{"_id": docId}
+	update := bson.M{
+		"$pull": bson.M{
+			"outbox.events": bson.M{"_id": eventId},
+		},
+	}
 
+	_, err := processor.Collection.UpdateOne(ctx, filter, update)
+	if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
+		errChan <- err
+	}
 }

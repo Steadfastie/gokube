@@ -11,8 +11,12 @@
             "mode": "exec",
             "program": "${workspaceFolder}/api",
             "env": {
-                "SETTINGS": "local",
-                "APP_ENV": "development"
+                "APP_ENV": "development",
+                "AUTH_DOMAIN": "gokube.eu.auth0.com",
+                "AUTH_AUDIENCE": "gokube",
+                "MONGO_CONNECTION_STRING": "localhost:30000/?replicaSet=rs0&directConnection=true",
+                "MONGO_DATABASE": "gokube-dev",
+                "LOGLEVEL": "information",
               }
         },
         {
@@ -22,8 +26,12 @@
             "mode": "debug",
             "program": "${workspaceFolder}/api",
             "env": {
-                "SETTINGS": "local",
-                "APP_ENV": "development"
+                "APP_ENV": "development",
+                "AUTH_DOMAIN": "gokube.eu.auth0.com",
+                "AUTH_AUDIENCE": "gokube",
+                "MONGO_CONNECTION_STRING": "localhost:30000/?replicaSet=rs0&directConnection=true",
+                "MONGO_DATABASE": "gokube-dev",
+                "LOGLEVEL": "information",
               }
         },
         {
@@ -33,8 +41,10 @@
             "mode": "exec",
             "program": "${workspaceFolder}/outbox",
             "env": {
-                "SETTINGS": "local",
-                "APP_ENV": "development"
+                "APP_ENV": "development",
+                "MONGO_CONNECTION_STRING": "localhost:30000/?replicaSet=rs0&directConnection=true",
+                "MONGO_DATABASE": "gokube-dev",
+                "LOGLEVEL": "information",
               }
         },
         {
@@ -44,8 +54,10 @@
             "mode": "debug",
             "program": "${workspaceFolder}/outbox",
             "env": {
-                "SETTINGS": "local",
-                "APP_ENV": "development"
+                "APP_ENV": "development",
+                "MONGO_CONNECTION_STRING": "localhost:30000/?replicaSet=rs0&directConnection=true",
+                "MONGO_DATABASE": "gokube-dev",
+                "LOGLEVEL": "information",
               }
         },
     ]

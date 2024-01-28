@@ -41,9 +41,11 @@ func NewCounterUpdatedEvent(counter int, updatedBy string, userAlias string) *Co
 	}
 }
 
+type EventPayload interface{}
+
 type OutboxEvent struct {
 	Id        primitive.ObjectID `bson:"_id"`
-	Payload   any                `bson:"payload"`
+	Payload   EventPayload       `bson:"payload"`
 	Timestamp time.Time          `bson:"timestamp"`
 }
 

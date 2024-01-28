@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-co-op/gocron/v2"
 	infra "github.com/steadfastie/gokube/outbox/infrastructure"
+	"github.com/steadfastie/gokube/outbox/job"
 	"go.uber.org/zap"
 )
 
@@ -27,15 +28,14 @@ func main() {
 
 	s.NewJob(
 		gocron.CronJob(
-			"*/5 * * * * *",
+			infra.GetCron(),
 			true,
 		),
 		gocron.NewTask(
-			func(a string, b int) {
-				// do things
+			func(processor job.OutboxProcessor) {
+				processor.ProcessOutbox(ctx)
 			},
-			"hello",
-			1,
+			infra.GetOutboxProcessor(),
 		),
 	)
 	s.Start()

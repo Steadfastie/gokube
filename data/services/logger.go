@@ -16,7 +16,6 @@ type LogLevelProvider interface {
 
 func NewLogger(ctx context.Context, config LogLevelProvider) (*zap.Logger, error) {
 	stdout := zapcore.AddSync(os.Stdout)
-	stderr := zapcore.AddSync(os.Stderr)
 	level := getLogLevel(config)
 	loggerCfg := zap.NewDevelopmentEncoderConfig()
 	if os.Getenv("APP_ENV") == "production" {
@@ -27,7 +26,6 @@ func NewLogger(ctx context.Context, config LogLevelProvider) (*zap.Logger, error
 
 	core := zapcore.NewTee(
 		zapcore.NewCore(consoleEncoder, stdout, level),
-		zapcore.NewCore(consoleEncoder, stderr, level),
 	)
 
 	logger := zap.New(core)

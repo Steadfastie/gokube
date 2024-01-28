@@ -2,12 +2,19 @@ package infrastructure
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 	"os"
 
+	"github.com/steadfastie/gokube/data/errors"
 	"github.com/steadfastie/gokube/data/services"
 	"go.uber.org/zap"
+)
+
+const (
+	EnvAuthDomain            = "AUTH_DOMAIN"
+	EnvAuthAudience          = "AUTH_AUDIENCE"
+	EnvMongoConnectionString = "MONGO_CONNECTION_STRING"
+	EnvMongoDatabase         = "MONGO_DATABASE"
+	EnvLogLevel              = "LOGLEVEL"
 )
 
 type Config struct {
@@ -30,29 +37,41 @@ type AuthSettings struct {
 }
 
 func NewConfig(ctx context.Context, logger *zap.Logger) (*Config, error) {
-	env := os.Getenv("SETTINGS")
-	if env == "" {
-		logger.Error("SETTINGS is not set")
+	authDomain := os.Getenv(EnvAuthDomain)
+	if authDomain == "" {
+		panic(errors.NewBusinessRuleError("Auth domain is not set"))
 	}
 
-	envFile := fmt.Sprintf("%sSettings.json", env)
-	file, err := os.Open(envFile)
-	if err != nil {
-		return nil, err
+	authAudience := os.Getenv(EnvAuthAudience)
+	if authAudience == "" {
+		panic(errors.NewBusinessRuleError("Auth audience is not set"))
 	}
-	defer func(file *os.File) {
-		err := file.Close()
-		if err != nil {
-			logger.Error("Could not close file",
-				zap.String("file", file.Name()),
-				zap.Error(err))
-		}
-	}(file)
 
-	config := &Config{}
-	err = json.NewDecoder(file).Decode(config)
-	if err != nil {
-		return nil, err
+	mongoConnectionString := os.Getenv(EnvMongoConnectionString)
+	if mongoConnectionString == "" {
+		panic(errors.NewBusinessRuleError("Mongo connection string is not set"))
+	}
+
+	mongoDatabase := os.Getenv(EnvMongoDatabase)
+	if mongoDatabase == "" {
+		panic(errors.NewBusinessRuleError("Mongo database is not set"))
+	}
+
+	logLevel := os.Getenv(EnvLogLevel)
+	if logLevel == "" {
+		logLevel = "Information" // Defaults to Information
+	}
+
+	config := &Config{
+		Auth: AuthSettings{
+			Domain:   authDomain,
+			Audience: authAudience,
+		},
+		MongoSettings: services.MongoSettings{
+			ConnectionString: mongoConnectionString,
+			Database:         mongoDatabase,
+		},
+		LogLevel: logLevel,
 	}
 
 	return config, nil

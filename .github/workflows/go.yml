@@ -22,7 +22,7 @@ jobs:
         go-version: '1.21'
 
     - name: Build API
-      run: go build -v ./api
+      run: go build -v -o ./api/api.exe ./api
 
     - name: Build Outbox
-      run: go build -v ./outbox
+      run: go build -v -o ./outbox/outbox.exe ./outbox

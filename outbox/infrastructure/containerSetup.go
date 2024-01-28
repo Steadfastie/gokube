@@ -6,6 +6,7 @@ import (
 
 	"github.com/golobby/container/v3"
 	"github.com/steadfastie/gokube/data/services"
+	"github.com/steadfastie/gokube/outbox/job"
 	"go.uber.org/zap"
 )
 
@@ -30,6 +31,13 @@ func InitializeServices(ctx context.Context, logger *zap.Logger) {
 	if err != nil {
 		log.Fatalf("can't register MongoDB client: %v", err)
 	}
+
+	err = container.Singleton(func(mongodb *services.MongoDB, logger *zap.Logger) job.OutboxProcessor {
+		return job.NewOutboxProcessor(mongodb, logger)
+	})
+	if err != nil {
+		log.Fatalf("can't register Basic repo: %v", err)
+	}
 }
 
 func DisconnectServices(ctx context.Context) {
@@ -39,4 +47,16 @@ func DisconnectServices(ctx context.Context) {
 	container.Call(func(logger *zap.Logger) {
 		services.SyncLogger(logger)
 	})
+}
+
+func GetCron() string {
+	var config *Config
+	container.Resolve(&config)
+	return config.Cron
+}
+
+func GetOutboxProcessor() job.OutboxProcessor {
+	var processor job.OutboxProcessor
+	container.Resolve(&processor)
+	return processor
 }
