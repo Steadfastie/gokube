@@ -1,4 +1,4 @@
-package infrastucture
+package infrastructure
 
 import (
 	"encoding/json"
@@ -10,7 +10,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/golobby/container/v3"
-	"github.com/steadfastie/gokube/infrastucture/services"
 )
 
 const (
@@ -25,7 +24,7 @@ type Claims struct {
 }
 
 func AuthMiddleware(requiredScopes ...string) gin.HandlerFunc {
-	var config *services.Config
+	var config *Config
 	container.Resolve(&config)
 
 	return func(c *gin.Context) {

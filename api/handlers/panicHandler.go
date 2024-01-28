@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/gin-gonic/gin"
-	"github.com/steadfastie/gokube/infrastucture/errors"
+	"github.com/steadfastie/gokube/data/errors"
 )
 
 type PanicType struct {

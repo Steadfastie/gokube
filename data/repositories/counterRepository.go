@@ -1,4 +1,4 @@
-package data
+package repositories
 
 import (
 	"context"
@@ -6,8 +6,9 @@ import (
 	"fmt"
 	"time"
 
-	domainErrors "github.com/steadfastie/gokube/infrastucture/errors"
-	"github.com/steadfastie/gokube/infrastucture/services"
+	"github.com/steadfastie/gokube/data"
+	domainErrors "github.com/steadfastie/gokube/data/errors"
+	"github.com/steadfastie/gokube/data/services"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -18,9 +19,9 @@ import (
 const collection = "counter"
 
 type CounterRepository interface {
-	GetById(ctx context.Context, id string, resultChan chan<- *CounterDocument, errChan chan<- error)
+	GetById(ctx context.Context, id string, resultChan chan<- *data.CounterDocument, errChan chan<- error)
 	Create(ctx context.Context, resultChan chan<- primitive.ObjectID, errChan chan<- error)
-	Patch(ctx context.Context, id string, patch *PatchModel, resultChan chan<- *PatchCounterResponse, errChan chan<- error)
+	Patch(ctx context.Context, id string, patch *data.PatchModel, resultChan chan<- *data.PatchCounterResponse, errChan chan<- error)
 }
 
 type counterRepository struct {
@@ -35,7 +36,7 @@ func NewCounterRepository(mongodb *services.MongoDB, logger *zap.Logger) Counter
 	}
 }
 
-func (repo *counterRepository) GetById(ctx context.Context, id string, resultChan chan<- *CounterDocument, errChan chan<- error) {
+func (repo *counterRepository) GetById(ctx context.Context, id string, resultChan chan<- *data.CounterDocument, errChan chan<- error) {
 	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		errChan <- err
@@ -43,7 +44,7 @@ func (repo *counterRepository) GetById(ctx context.Context, id string, resultCha
 	}
 
 	var result struct {
-		Document CounterDocument `bson:"document"`
+		Document data.CounterDocument `bson:"document"`
 	}
 	filter := bson.M{"_id": objectID}
 	opts := options.FindOne().SetProjection(bson.D{{Key: "document", Value: 1}})
@@ -59,10 +60,10 @@ func (repo *counterRepository) GetById(ctx context.Context, id string, resultCha
 
 func (repo *counterRepository) Create(ctx context.Context, resultChan chan<- primitive.ObjectID, errChan chan<- error) {
 	now := time.Now().UTC()
-	counterDocument := NewCounterDocument(now)
-	document := NewDocument(counterDocument, counterDocument.Id)
-	event := NewCounterCreatedEvent(ctx.Value("user").(string))
-	outbox := NewOutboxEvent(event, now)
+	counterDocument := data.NewCounterDocument(now)
+	document := data.NewDocument(counterDocument, counterDocument.Id)
+	event := data.NewCounterCreatedEvent(ctx.Value("user").(string))
+	outbox := data.NewOutboxEvent(event, now)
 
 	document.Outbox.AddEvent(outbox)
 
@@ -78,20 +79,20 @@ func (repo *counterRepository) Create(ctx context.Context, resultChan chan<- pri
 	}
 }
 
-func (repo *counterRepository) Patch(ctx context.Context, id string, patch *PatchModel, resultChan chan<- *PatchCounterResponse, errChan chan<- error) {
+func (repo *counterRepository) Patch(ctx context.Context, id string, patch *data.PatchModel, resultChan chan<- *data.PatchCounterResponse, errChan chan<- error) {
 	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		errChan <- err
 		return
 	}
 
-	retryConfig := &RetryConfig{
+	retryConfig := &data.RetryConfig{
 		Context:          ctx,
 		Logger:           repo.Logger,
 		RecoverableError: mongo.ErrNoDocuments,
 	}
 
-	err = WithRetry(retryConfig, func() error {
+	err = data.WithRetry(retryConfig, func() error {
 		return repo.findOneAndUpdate(ctx, objectID, patch, resultChan)
 	})
 
@@ -103,9 +104,9 @@ func (repo *counterRepository) Patch(ctx context.Context, id string, patch *Patc
 	}
 }
 
-func (repo *counterRepository) findOneAndUpdate(ctx context.Context, id primitive.ObjectID, patch *PatchModel, resultChan chan<- *PatchCounterResponse) error {
+func (repo *counterRepository) findOneAndUpdate(ctx context.Context, id primitive.ObjectID, patch *data.PatchModel, resultChan chan<- *data.PatchCounterResponse) error {
 	var counterBefore struct {
-		Document CounterDocument `bson:"document"`
+		Document data.CounterDocument `bson:"document"`
 	}
 
 	filter := bson.M{"_id": id}
@@ -126,12 +127,12 @@ func (repo *counterRepository) findOneAndUpdate(ctx context.Context, id primitiv
 	}
 
 	var counterAfter struct {
-		Document CounterDocument `bson:"document"`
+		Document data.CounterDocument `bson:"document"`
 	}
 
 	now := time.Now().UTC()
-	event := NewCounterUpdatedEvent(counterUpdate.Counter, counterUpdate.UpdatedBy, ctx.Value("user").(string))
-	outbox := NewOutboxEvent(event, now)
+	event := data.NewCounterUpdatedEvent(counterUpdate.Counter, counterUpdate.UpdatedBy, ctx.Value("user").(string))
+	outbox := data.NewOutboxEvent(event, now)
 
 	updateFilter := bson.D{{Key: "_id", Value: counterUpdate.Id}, {Key: "document.version", Value: counterBefore.Document.Version}}
 	update := bson.D{
@@ -146,6 +147,6 @@ func (repo *counterRepository) findOneAndUpdate(ctx context.Context, id primitiv
 	if err := repo.Collection.FindOneAndUpdate(ctx, updateFilter, update, options).Decode(&counterAfter); err != nil {
 		return err
 	}
-	resultChan <- CreatePatchCounterResponse(&counterBefore.Document, &counterAfter.Document)
+	resultChan <- data.CreatePatchCounterResponse(&counterBefore.Document, &counterAfter.Document)
 	return nil
 }

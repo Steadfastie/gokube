@@ -15,12 +15,30 @@ type MongoDB struct {
 	MongoDB     *mongo.Database
 }
 
-func NewMongoClient(ctx context.Context, config *Config, logger *zap.Logger) (*MongoDB, error) {
+type MongoSettings struct {
+	ConnectionString string `json:"MongoConnectionString"`
+	Database         string `json:"MongoDatabase"`
+}
+
+type MongoSettingsProvider interface {
+	GetMongoSettings() MongoSettings
+}
+
+func NewMongoClient(ctx context.Context, config MongoSettingsProvider, logger *zap.Logger) (*MongoDB, error) {
+	mongoSettings := config.GetMongoSettings()
 	logger.Debug("Trying to connect to MongoDB")
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://"+config.MongoSettings.MongoConnectionString))
+	bsonOpts := &options.BSONOptions{
+		NilSliceAsEmpty: true,
+	}
+
+	clientOpts := options.Client().
+		ApplyURI("mongodb://" + mongoSettings.ConnectionString).
+		SetBSONOptions(bsonOpts)
+
+	client, err := mongo.Connect(ctx, clientOpts)
 	if err != nil {
 		logger.Error("Could not connect to MongoDB", zap.Error(err))
 		panic(err)
@@ -36,7 +54,7 @@ func NewMongoClient(ctx context.Context, config *Config, logger *zap.Logger) (*M
 
 	mongodb := &MongoDB{
 		MongoClient: client,
-		MongoDB:     client.Database(config.MongoSettings.MongoDatabase),
+		MongoDB:     client.Database(mongoSettings.Database),
 	}
 
 	logger.Debug("Connection to MongoDB is ready")

@@ -3,13 +3,15 @@ package handlers
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/steadfastie/gokube/data"
+	_ "github.com/steadfastie/gokube/data/errors"
+	"github.com/steadfastie/gokube/data/repositories"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.uber.org/zap"
 )
 
 type CounterController struct {
-	Repository data.CounterRepository `container:"type"`
-	Logger     *zap.Logger            `container:"type"`
+	Repository repositories.CounterRepository `container:"type"`
+	Logger     *zap.Logger                    `container:"type"`
 }
 
 // GetByIdHandler Gets a counter by Id
