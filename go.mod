@@ -4,7 +4,9 @@ go 1.21.5
 
 require (
 	github.com/avast/retry-go v3.0.0+incompatible
+	github.com/confluentinc/confluent-kafka-go/v2 v2.3.0
 	github.com/gin-gonic/gin v1.9.1
+	github.com/go-co-op/gocron/v2 v2.2.1
 	github.com/golang-jwt/jwt/v5 v5.2.0
 	github.com/golobby/container/v3 v3.3.2
 	github.com/prometheus/client_golang v1.17.0
@@ -16,7 +18,7 @@ require (
 )
 
 require (
-	github.com/go-co-op/gocron/v2 v2.2.1 // indirect
+	github.com/confluentinc/confluent-kafka-go v1.9.2 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/google/uuid v1.5.0 // indirect
 	github.com/jonboulle/clockwork v0.4.0 // indirect
@@ -27,7 +29,7 @@ require (
 require (
 	github.com/KyleBanks/depth v1.2.1 // indirect
 	github.com/MicahParks/jwkset v0.5.7 // indirect
-	github.com/MicahParks/keyfunc/v3 v3.2.4 // indirect
+	github.com/MicahParks/keyfunc/v3 v3.2.4
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bytedance/sonic v1.10.2 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
@@ -45,7 +47,7 @@ require (
 	github.com/go-playground/validator/v10 v10.16.0 // indirect
 	github.com/goccy/go-json v0.10.2 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
-	github.com/golang/snappy v0.0.1 // indirect
+	github.com/golang/snappy v0.0.4 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.13.6 // indirect
