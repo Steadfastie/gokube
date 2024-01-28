@@ -1,8 +1,11 @@
 package data
 
 import (
+	"errors"
+	"fmt"
 	"time"
 
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -45,8 +48,49 @@ type EventPayload interface{}
 
 type OutboxEvent struct {
 	Id        primitive.ObjectID `bson:"_id"`
-	Payload   EventPayload       `bson:"payload"`
+	Payload   any                `bson:"payload"`
 	Timestamp time.Time          `bson:"timestamp"`
+}
+
+func (event *OutboxEvent) UnmarshalBSON(data []byte) error {
+	raw := bson.Raw(data)
+
+	id, ok := raw.Lookup("_id").ObjectIDOK()
+	if !ok {
+		return errors.New(`failed to find field "_id"`)
+	}
+	event.Id = id
+
+	timestamp, ok := raw.Lookup("timestamp").TimeOK()
+	if !ok {
+		return errors.New(`failed to find field "timestamp"`)
+	}
+	event.Timestamp = timestamp
+
+	payload := raw.Lookup("payload").Document()
+	payloadType, ok := payload.Lookup("type").StringValueOK()
+	if !ok {
+		return errors.New(`payload did not contain field "type"`)
+	}
+
+	switch payloadType {
+	case string(CounterCreated):
+		event.Payload = &CounterCreatedEvent{
+			Type:      CounterUpdated,
+			UserAlias: payload.Lookup("userAlias").StringValue(),
+		}
+	case string(CounterUpdated):
+		event.Payload = &CounterUpdatedEvent{
+			Type:      CounterUpdated,
+			Counter:   int(payload.Lookup("counter").AsInt64()),
+			UpdatedBy: payload.Lookup("updatedBy").StringValue(),
+			UserAlias: payload.Lookup("userAlias").StringValue(),
+		}
+	default:
+		return fmt.Errorf("unknown event type %q", payloadType)
+	}
+
+	return nil
 }
 
 type ByTimestamp []OutboxEvent

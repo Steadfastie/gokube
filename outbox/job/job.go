@@ -3,6 +3,7 @@ package job
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sort"
 	"time"
 
@@ -77,7 +78,7 @@ func (processor *outboxProcessor) findDocumentsToProcess(ctx context.Context, re
 			resultChan <- nil
 			return
 		}
-		errChan <- err
+		errChan <- fmt.Errorf("error happened while finding documents with events: %w", err)
 	}
 
 	type documentWithId struct {
@@ -86,7 +87,7 @@ func (processor *outboxProcessor) findDocumentsToProcess(ctx context.Context, re
 
 	var results []documentWithId
 	if err = cursor.All(ctx, &results); err != nil {
-		errChan <- err
+		errChan <- fmt.Errorf("error happened while pulling documents with events: %w", err)
 	}
 
 	stringResults := make([]primitive.ObjectID, len(results))
@@ -178,7 +179,7 @@ func (processor *outboxProcessor) lockOutbox(options *LockOutboxOptions) {
 			options.resultChan <- false
 			return
 		}
-		options.errChan <- err
+		options.errChan <- fmt.Errorf("error happened locking outbox bucket for %v: %w", options.docId.Hex(), err)
 	}
 
 	options.resultChan <- result.ModifiedCount > 0
@@ -197,18 +198,18 @@ func (processor *outboxProcessor) getEvents(ctx context.Context, docId primitive
 			resultChan <- nil
 			return
 		}
-		errChan <- err
+		errChan <- fmt.Errorf("error happened while getting events: %w", err)
 	}
 
 	resultChan <- result.Outbox.Events
 }
 
 func (processor *outboxProcessor) handleEvent(ctx context.Context, event *data.OutboxEvent, resultChan chan bool, errChan chan<- error) {
-	switch payload := event.Payload.(type) {
-	case data.CounterCreatedEvent:
-		processor.Logger.Info("Create event has been handled", zap.Any("Event", event), zap.String("Type", string(payload.Type)))
-	case data.CounterUpdatedEvent:
-		processor.Logger.Info("Update event has been handled", zap.Any("Event", event), zap.String("Type", string(payload.Type)))
+	switch event.Payload.(type) {
+	case *data.CounterCreatedEvent:
+		processor.Logger.Info("Create event has been handled", zap.Any("Event", event))
+	case *data.CounterUpdatedEvent:
+		processor.Logger.Info("Update event has been handled", zap.Any("Event", event))
 	default:
 		processor.Logger.Info("Unknown event has been handled", zap.Any("Event", event))
 	}
@@ -226,6 +227,6 @@ func (processor *outboxProcessor) removeEvent(ctx context.Context, docId primiti
 
 	_, err := processor.Collection.UpdateOne(ctx, filter, update)
 	if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
-		errChan <- err
+		errChan <- fmt.Errorf("error happened while removing events from %v: %w", docId.Hex(), err)
 	}
 }

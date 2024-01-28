@@ -30,7 +30,15 @@ func NewMongoClient(ctx context.Context, config MongoSettingsProvider, logger *z
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://"+mongoSettings.ConnectionString))
+	bsonOpts := &options.BSONOptions{
+		NilSliceAsEmpty: true,
+	}
+
+	clientOpts := options.Client().
+		ApplyURI("mongodb://" + mongoSettings.ConnectionString).
+		SetBSONOptions(bsonOpts)
+
+	client, err := mongo.Connect(ctx, clientOpts)
 	if err != nil {
 		logger.Error("Could not connect to MongoDB", zap.Error(err))
 		panic(err)
