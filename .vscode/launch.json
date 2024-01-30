@@ -30,7 +30,23 @@
                 "MONGO_CONNECTION_STRING": "localhost:30000/?replicaSet=rs0&directConnection=true",
                 "MONGO_DATABASE": "gokube-dev",
                 "LOGLEVEL": "information",
-                "KAFKA_ADDRESSES": "localhost:9092"
+                "KAFKA_ADDRESSES": "localhost:9092",
+                "CRON": "*/10 * * * * *"
+              }
+        },
+        {
+            "name": "Consumer Debug",
+            "type": "go",
+            "request": "launch",
+            "mode": "debug",
+            "program": "${workspaceFolder}/consumer/main.go",
+            "env": {
+                "APP_ENV": "development",
+                "MONGO_CONNECTION_STRING": "localhost:30000/?replicaSet=rs0&directConnection=true",
+                "MONGO_DATABASE": "gokube-dev",
+                "LOGLEVEL": "information",
+                "KAFKA_ADDRESSES": "localhost:9092",
+                "CRON": "*/1 * * * * *"
               }
         },
     ]

@@ -2,6 +2,7 @@ package job
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"sort"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/steadfastie/gokube/data"
 	"github.com/steadfastie/gokube/data/brocker"
+	"github.com/steadfastie/gokube/data/events"
 	"github.com/steadfastie/gokube/data/services"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -216,17 +218,36 @@ func (processor *outboxProcessor) getEvents(ctx context.Context, docId primitive
 func (processor *outboxProcessor) handleEvent(ctx context.Context, event *data.OutboxEvent, resultChan chan bool, errChan chan<- error) {
 	switch payload := event.Payload.(type) {
 	case *data.CounterCreatedEvent:
-		message := "Create event has been handled"
-		processor.Logger.Info(message, zap.Any("Event", event))
-		processor.Producer.SendMessage(ctx, []byte(string(payload.Type)), []byte(message))
+		message := &events.CounterEvent{
+			EventId: event.Id,
+			When:    event.Timestamp,
+			Who:     payload.UserAlias,
+			What:    payload.Type,
+		}
+		value, err := json.Marshal(message)
+		if err != nil {
+			processor.Logger.Error("Error encoding event", zap.Error(err))
+			return
+		}
+		processor.Logger.Info("Sending create counter event", zap.Any("Event", event))
+		processor.Producer.SendMessage(ctx, []byte(string(payload.Type)), value)
 	case *data.CounterUpdatedEvent:
-		message := "Update event has been handled"
-		processor.Logger.Info(message, zap.Any("Event", event))
-		processor.Producer.SendMessage(ctx, []byte(string(payload.Type)), []byte(message))
+		message := &events.CounterEvent{
+			EventId: event.Id,
+			When:    event.Timestamp,
+			Who:     fmt.Sprintf("%v (%v)", payload.UpdatedBy, payload.UserAlias),
+			What:    payload.Type,
+		}
+		value, err := json.Marshal(message)
+		if err != nil {
+			processor.Logger.Error("Error encoding event", zap.Error(err))
+			return
+		}
+		processor.Logger.Info("Sending update counter event", zap.Any("Event", event))
+		processor.Producer.SendMessage(ctx, []byte(string(payload.Type)), value)
 	default:
-		message := "Unknown event has been handled"
+		message := "Unknown event has been found. Won't ship that"
 		processor.Logger.Info(message, zap.Any("Event", event))
-		processor.Producer.SendMessage(ctx, []byte("Unknown"), []byte(message))
 	}
 
 	resultChan <- true
