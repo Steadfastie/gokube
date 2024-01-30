@@ -87,9 +87,9 @@ func (repo *counterRepository) Patch(ctx context.Context, id string, patch *data
 	}
 
 	retryConfig := &data.RetryConfig{
-		Context:          ctx,
-		Logger:           repo.Logger,
-		RecoverableError: mongo.ErrNoDocuments,
+		Context:           ctx,
+		Logger:            repo.Logger,
+		RecoverableErrors: []error{mongo.ErrNoDocuments},
 	}
 
 	err = data.WithRetry(retryConfig, func() error {
