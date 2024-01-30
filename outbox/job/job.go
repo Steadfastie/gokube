@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/steadfastie/gokube/data"
+	"github.com/steadfastie/gokube/data/brocker"
 	"github.com/steadfastie/gokube/data/services"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -24,12 +25,14 @@ const collection = "counter"
 
 type outboxProcessor struct {
 	Collection *mongo.Collection
+	Producer   brocker.Producer
 	Logger     *zap.Logger
 }
 
-func NewOutboxProcessor(mongodb *services.MongoDB, logger *zap.Logger) OutboxProcessor {
+func NewOutboxProcessor(mongodb *services.MongoDB, producer brocker.Producer, logger *zap.Logger) OutboxProcessor {
 	return &outboxProcessor{
 		Collection: mongodb.MongoDB.Collection(collection),
+		Producer:   producer,
 		Logger:     logger,
 	}
 }
@@ -38,6 +41,9 @@ func (processor *outboxProcessor) ProcessOutbox(ctx context.Context) {
 	processor.Logger.Info("Starting processing")
 	idsChan := make(chan []primitive.ObjectID)
 	errChan := make(chan error)
+
+	defer close(idsChan)
+	defer close(errChan)
 
 	go processor.findDocumentsToProcess(ctx, idsChan, errChan)
 
@@ -101,6 +107,7 @@ func (processor *outboxProcessor) findDocumentsToProcess(ctx context.Context, re
 func (processor *outboxProcessor) handleEvents(ctx context.Context, docId primitive.ObjectID, errChan chan<- error) {
 	lockId := primitive.NewObjectID()
 	lockChan := make(chan bool)
+	defer close(lockChan)
 
 	lockOptions := &LockOutboxOptions{
 		ctx:        ctx,
@@ -118,6 +125,7 @@ func (processor *outboxProcessor) handleEvents(ctx context.Context, docId primit
 	}
 
 	eventsChan := make(chan []data.OutboxEvent)
+	defer close(eventsChan)
 
 	go processor.getEvents(ctx, docId, eventsChan, errChan)
 
@@ -130,6 +138,7 @@ func (processor *outboxProcessor) handleEvents(ctx context.Context, docId primit
 
 	for _, event := range events {
 		eventChan := make(chan bool)
+		defer close(eventChan)
 
 		go processor.handleEvent(ctx, &event, eventChan, errChan)
 
@@ -138,7 +147,7 @@ func (processor *outboxProcessor) handleEvents(ctx context.Context, docId primit
 			continue
 		}
 
-		go processor.removeEvent(ctx, docId, event.Id, eventChan, errChan)
+		// go processor.removeEvent(ctx, docId, event.Id, eventChan, errChan)
 	}
 	errChan <- nil
 }
@@ -205,13 +214,19 @@ func (processor *outboxProcessor) getEvents(ctx context.Context, docId primitive
 }
 
 func (processor *outboxProcessor) handleEvent(ctx context.Context, event *data.OutboxEvent, resultChan chan bool, errChan chan<- error) {
-	switch event.Payload.(type) {
+	switch payload := event.Payload.(type) {
 	case *data.CounterCreatedEvent:
-		processor.Logger.Info("Create event has been handled", zap.Any("Event", event))
+		message := "Create event has been handled"
+		processor.Logger.Info(message, zap.Any("Event", event))
+		processor.Producer.SendMessage(ctx, []byte(string(payload.Type)), []byte(message))
 	case *data.CounterUpdatedEvent:
-		processor.Logger.Info("Update event has been handled", zap.Any("Event", event))
+		message := "Update event has been handled"
+		processor.Logger.Info(message, zap.Any("Event", event))
+		processor.Producer.SendMessage(ctx, []byte(string(payload.Type)), []byte(message))
 	default:
-		processor.Logger.Info("Unknown event has been handled", zap.Any("Event", event))
+		message := "Unknown event has been handled"
+		processor.Logger.Info(message, zap.Any("Event", event))
+		processor.Producer.SendMessage(ctx, []byte("Unknown"), []byte(message))
 	}
 
 	resultChan <- true

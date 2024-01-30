@@ -2,6 +2,7 @@ package infrastructure
 
 import (
 	"os"
+	"strings"
 
 	"github.com/steadfastie/gokube/data/errors"
 	"github.com/steadfastie/gokube/data/services"
@@ -12,12 +13,14 @@ const (
 	EnvMongoDatabase         = "MONGO_DATABASE"
 	EnvLogLevel              = "LOGLEVEL"
 	EnvCron                  = "CRON"
+	EnvKafkaAddresses        = "KAFKA_ADDRESSES"
 )
 
 type Config struct {
 	MongoSettings services.MongoSettings
 	LogLevel      string
 	Cron          string
+	KafkaServers  []string
 }
 
 func (config *Config) GetMongoSettings() services.MongoSettings {
@@ -41,7 +44,7 @@ func NewConfig() (*Config, error) {
 
 	logLevel := os.Getenv(EnvLogLevel)
 	if logLevel == "" {
-		logLevel = "Information" // Defaults to Information
+		logLevel = "Information"
 	}
 
 	cronExpression := os.Getenv(EnvCron)
@@ -49,13 +52,22 @@ func NewConfig() (*Config, error) {
 		cronExpression = "*/5 * * * * *" // Defaults to every 5 seconds
 	}
 
+	kafkaBootstrapServer := os.Getenv(EnvKafkaAddresses)
+	addresses := []string{}
+	if kafkaBootstrapServer == "" {
+		addresses = append(addresses, "localhost")
+	} else {
+		addresses = append(addresses, strings.Split(kafkaBootstrapServer, ",")...)
+	}
+
 	config := &Config{
 		MongoSettings: services.MongoSettings{
 			ConnectionString: mongoConnectionString,
 			Database:         mongoDatabase,
 		},
-		LogLevel: logLevel,
-		Cron:     cronExpression,
+		LogLevel:     logLevel,
+		Cron:         cronExpression,
+		KafkaServers: addresses,
 	}
 
 	return config, nil

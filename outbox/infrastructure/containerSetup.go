@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/golobby/container/v3"
+	"github.com/steadfastie/gokube/data/brocker"
 	"github.com/steadfastie/gokube/data/services"
 	"github.com/steadfastie/gokube/outbox/job"
 	"go.uber.org/zap"
@@ -32,8 +33,15 @@ func InitializeServices(ctx context.Context, logger *zap.Logger) {
 		log.Fatalf("can't register MongoDB client: %v", err)
 	}
 
-	err = container.Singleton(func(mongodb *services.MongoDB, logger *zap.Logger) job.OutboxProcessor {
-		return job.NewOutboxProcessor(mongodb, logger)
+	err = container.Singleton(func(config *Config, logger *zap.Logger) brocker.Producer {
+		return brocker.NewWriter(ctx, logger, config.KafkaServers...)
+	})
+	if err != nil {
+		log.Fatalf("can't register Basic repo: %v", err)
+	}
+
+	err = container.Singleton(func(mongodb *services.MongoDB, producer brocker.Producer, logger *zap.Logger) job.OutboxProcessor {
+		return job.NewOutboxProcessor(mongodb, producer, logger)
 	})
 	if err != nil {
 		log.Fatalf("can't register Basic repo: %v", err)
@@ -41,6 +49,9 @@ func InitializeServices(ctx context.Context, logger *zap.Logger) {
 }
 
 func DisconnectServices(ctx context.Context) {
+	container.Call(func(producer brocker.Producer) {
+		producer.Disconnect()
+	})
 	container.Call(func(mongodb *services.MongoDB, logger *zap.Logger) {
 		mongodb.DisconnectMongoClient(ctx, logger)
 	})

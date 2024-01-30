@@ -10,16 +10,16 @@ import (
 )
 
 type RetryConfig struct {
-	Context          context.Context
-	Logger           *zap.Logger
-	RecoverableError error
+	Context           context.Context
+	Logger            *zap.Logger
+	RecoverableErrors []error
 }
 
 func WithRetry(config *RetryConfig, operation func() error) error {
 	return retry.Do(
 		func() error {
 			err := operation()
-			if errors.Is(err, config.RecoverableError) {
+			if containsError(config.RecoverableErrors, err) {
 				return err
 			} else if err != nil {
 				return retry.Unrecoverable(err)
@@ -40,4 +40,13 @@ func WithRetry(config *RetryConfig, operation func() error) error {
 		}),
 		retry.LastErrorOnly(true),
 	)
+}
+
+func containsError(recoverableErrors []error, target error) bool {
+	for _, err := range recoverableErrors {
+		if errors.Is(target, err) {
+			return true
+		}
+	}
+	return false
 }

@@ -23,81 +23,27 @@ services:
       - mongodb
     entrypoint: [ "bash", "-c", "sleep 30 && echo 'rs.initiate({_id : \"rs0\", members: [{ _id : 0, host : \"mongodb:27017\" }]})' | mongosh mongodb:27017" ]
 
-  kafka-controller:
-    image: confluentinc/cp-server:latest
-    ports:
-     - 19092:9092
-     - 19093:9093
-     - 9012:9012
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.3
+    container_name: zookeeper
     environment:
-      KAFKA_NODE_ID: 1
-      KAFKA_PROCESS_ROLES: 'controller'
-      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@kafka-controller:9093'
-      KAFKA_INTER_BROKER_LISTENER_NAME: 'GOKUBECTR'
-      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
-      KAFKA_LISTENERS: 'CONTROLLER://kafka-controller:9093'
-      CLUSTER_ID: '4L6g3nShT-eMCtK--X86sw'
-      CONFLUENT_METRICS_REPORTER_BOOTSTRAP_SERVERS: localhost:19092
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
 
-  kafka-1:
-    image: confluentinc/cp-server:latest
-    ports:
-      - 29092:9092
-      - 29093:9093
-      - 9013:9013
-    environment:
-      KAFKA_NODE_ID: 2
-      KAFKA_PROCESS_ROLES: 'broker'
-      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@kafka-controller:9093'
-      KAFKA_LISTENERS: 'GOKUBECTR://kafka-1:9092'
-      KAFKA_INTER_BROKER_LISTENER_NAME: 'GOKUBECTR'
-      KAFKA_ADVERTISED_LISTENERS: GOKUBECTR://localhost:29092
-      KAFKA_METRIC_REPORTERS: io.confluent.metrics.reporter.ConfluentMetricsReporter
-      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
-      CLUSTER_ID: '4L6g3nShT-eMCtK--X86sw'
-      CONFLUENT_METRICS_REPORTER_BOOTSTRAP_SERVERS: localhost:29092
+  kafka:
+    image: confluentinc/cp-kafka:7.5.3
+    container_name: kafka
     depends_on:
-      - kafka-controller
-
-  kafka-2:
-    image: confluentinc/cp-server:latest
+      - zookeeper
     ports:
-      - 39092:9092
-      - 39093:9093
-      - 9014:9014
+      - 9092:9092
     environment:
-      KAFKA_NODE_ID: 3
-      KAFKA_PROCESS_ROLES: 'broker'
-      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@kafka-controller:9093'
-      KAFKA_LISTENERS: 'GOKUBECTR://kafka-2:9092'
-      KAFKA_INTER_BROKER_LISTENER_NAME: 'GOKUBECTR'
-      KAFKA_ADVERTISED_LISTENERS: GOKUBECTR://localhost:39092
-      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
-      KAFKA_METRIC_REPORTERS: io.confluent.metrics.reporter.ConfluentMetricsReporter
-      CLUSTER_ID: '4L6g3nShT-eMCtK--X86sw'
-      CONFLUENT_METRICS_REPORTER_BOOTSTRAP_SERVERS: localhost:39092
-    depends_on:
-      - kafka-controller
-
-  kafka-3:
-    image: confluentinc/cp-server:latest
-    ports:
-      - 49092:9092
-      - 59093:9093
-      - 9015:9015
-    environment:
-      KAFKA_NODE_ID: 4
-      KAFKA_PROCESS_ROLES: 'broker'
-      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@kafka-controller:9093'
-      KAFKA_LISTENERS: 'GOKUBECTR://kafka-3:9092'
-      KAFKA_INTER_BROKER_LISTENER_NAME: 'GOKUBECTR'
-      KAFKA_ADVERTISED_LISTENERS: GOKUBECTR://localhost:49092
-      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
-      KAFKA_METRIC_REPORTERS: io.confluent.metrics.reporter.ConfluentMetricsReporter
-      CLUSTER_ID: '4L6g3nShT-eMCtK--X86sw'
-      CONFLUENT_METRICS_REPORTER_BOOTSTRAP_SERVERS: localhost:49092
-    depends_on:
-      - kafka-controller
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,GOKUBE://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,GOKUBE:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
     
 volumes:
   mongo-local:

@@ -1,55 +1,63 @@
 package brocker
 
 import (
-	"fmt"
+	"context"
+	"time"
 
-	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
+	"github.com/segmentio/kafka-go"
+	"github.com/steadfastie/gokube/data"
 	"go.uber.org/zap"
 )
 
+const topic = "counter"
+
 type Producer interface {
-	SendMessage(topic string, value []byte)
+	SendMessage(ctx context.Context, key []byte, value []byte)
+	Disconnect()
 }
 
-type kafkaConnector struct {
-	Producer *kafka.Producer
-	Logger   *zap.Logger
+type kafkaWriter struct {
+	Writer *kafka.Writer
+	Logger *zap.Logger
 }
 
-func NewConnector(bootstrapServer string, logger *zap.Logger) (Producer, error) {
-	p, err := kafka.NewProducer(&kafka.ConfigMap{"bootstrap.servers": bootstrapServer})
+func NewWriter(ctx context.Context, logger *zap.Logger, addresses ...string) Producer {
+	w := &kafka.Writer{
+		Addr:                   kafka.TCP(addresses...),
+		Topic:                  topic,
+		AllowAutoTopicCreation: true,
+		Balancer:               &kafka.LeastBytes{},
+		RequiredAcks:           1,
+		WriteTimeout:           10 * time.Second,
+	}
+
+	connector := &kafkaWriter{
+		Writer: w,
+		Logger: logger,
+	}
+	return connector
+}
+
+func (writer *kafkaWriter) Disconnect() {
+	writer.Writer.Close()
+}
+
+func (writer *kafkaWriter) SendMessage(ctx context.Context, key []byte, value []byte) {
+	retryConfig := &data.RetryConfig{
+		Context:           ctx,
+		Logger:            writer.Logger,
+		RecoverableErrors: []error{kafka.LeaderNotAvailable, context.DeadlineExceeded},
+	}
+
+	err := data.WithRetry(retryConfig, func() error {
+		return writer.Writer.WriteMessages(retryConfig.Context,
+			kafka.Message{
+				Key:   key,
+				Value: value,
+			},
+		)
+	})
 	if err != nil {
-		return nil, fmt.Errorf("Kafka producer could not be established: %w", err)
+		writer.Logger.Error("Could not write a message to kafka", zap.Error(err))
 	}
-
-	go func(producer *kafka.Producer, logger *zap.Logger) {
-		for e := range producer.Events() {
-			switch ev := e.(type) {
-			case *kafka.Message:
-				if ev.TopicPartition.Error != nil {
-					fmt.Printf("Delivery failed: %v\n", ev.TopicPartition)
-				} else {
-					fmt.Printf("Delivered message to %v\n", ev.TopicPartition)
-				}
-			case kafka.Error:
-				logger.Error("Kafka error", zap.Error(ev))
-			default:
-				fmt.Printf("Ignored event: %s\n", ev)
-			}
-		}
-	}(p, logger)
-
-	connector := &kafkaConnector{
-		Producer: p,
-		Logger:   logger,
-	}
-	return connector, nil
-}
-
-func (connector *kafkaConnector) SendMessage(topic string, value []byte) {
-	connector.Producer.Produce(&kafka.Message{
-		TopicPartition: kafka.TopicPartition{Topic: &topic},
-		Value:          value,
-		Headers:        []kafka.Header{{Key: "eventType", Value: []byte("header values are binary")}},
-	}, nil)
 }
