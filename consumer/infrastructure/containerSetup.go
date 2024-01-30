@@ -7,6 +7,7 @@ import (
 	"github.com/golobby/container/v3"
 	"github.com/steadfastie/gokube/consumer/job"
 	"github.com/steadfastie/gokube/data/brocker"
+	"github.com/steadfastie/gokube/data/repositories"
 	"github.com/steadfastie/gokube/data/services"
 	"go.uber.org/zap"
 )
@@ -40,8 +41,15 @@ func InitializeServices(ctx context.Context, logger *zap.Logger) {
 		log.Fatalf("can't register Basic repo: %v", err)
 	}
 
-	err = container.Singleton(func(mongodb *services.MongoDB, consumer brocker.Consumer, logger *zap.Logger) job.ConsumerProcessor {
-		return job.NewConsumerProcessor(mongodb, consumer, logger)
+	err = container.Singleton(func(mongodb *services.MongoDB, logger *zap.Logger) repositories.EventsRepository {
+		return repositories.NewEventsRepository(mongodb, logger)
+	})
+	if err != nil {
+		log.Fatalf("can't register Basic repo: %v", err)
+	}
+
+	err = container.Singleton(func(mongodb *services.MongoDB, consumer brocker.Consumer, repo repositories.EventsRepository, logger *zap.Logger) job.ConsumerProcessor {
+		return job.NewConsumerProcessor(mongodb, consumer, repo, logger)
 	})
 	if err != nil {
 		log.Fatalf("can't register Basic repo: %v", err)

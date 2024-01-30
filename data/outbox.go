@@ -17,27 +17,31 @@ const (
 )
 
 type CounterCreatedEvent struct {
-	Type      EventType `bson:"type"`
-	UserAlias string    `bson:"userAlias"`
+	Type      EventType          `bson:"type"`
+	CounterId primitive.ObjectID `bson:"counterId"`
+	UserAlias string             `bson:"userAlias"`
 }
 
-func NewCounterCreatedEvent(userAlias string) *CounterCreatedEvent {
+func NewCounterCreatedEvent(counterId primitive.ObjectID, userAlias string) *CounterCreatedEvent {
 	return &CounterCreatedEvent{
 		Type:      CounterCreated,
+		CounterId: counterId,
 		UserAlias: userAlias,
 	}
 }
 
 type CounterUpdatedEvent struct {
-	Type      EventType `bson:"type"`
-	Counter   int       `bson:"counter"`
-	UpdatedBy string    `bson:"updatedBy"`
-	UserAlias string    `bson:"userAlias"`
+	Type      EventType          `bson:"type"`
+	CounterId primitive.ObjectID `bson:"counterId"`
+	Counter   int                `bson:"counter"`
+	UpdatedBy string             `bson:"updatedBy"`
+	UserAlias string             `bson:"userAlias"`
 }
 
-func NewCounterUpdatedEvent(counter int, updatedBy string, userAlias string) *CounterUpdatedEvent {
+func NewCounterUpdatedEvent(counterId primitive.ObjectID, counter int, updatedBy string, userAlias string) *CounterUpdatedEvent {
 	return &CounterUpdatedEvent{
 		Type:      CounterUpdated,
+		CounterId: counterId,
 		Counter:   counter,
 		UpdatedBy: updatedBy,
 		UserAlias: userAlias,
@@ -47,7 +51,7 @@ func NewCounterUpdatedEvent(counter int, updatedBy string, userAlias string) *Co
 type EventPayload interface{}
 
 type OutboxEvent struct {
-	Id        primitive.ObjectID `bson:"_id"`
+	EventId   primitive.ObjectID `bson:"_id"`
 	Payload   any                `bson:"payload"`
 	Timestamp time.Time          `bson:"timestamp"`
 }
@@ -59,7 +63,7 @@ func (event *OutboxEvent) UnmarshalBSON(data []byte) error {
 	if !ok {
 		return errors.New(`failed to find field "_id"`)
 	}
-	event.Id = id
+	event.EventId = id
 
 	timestamp, ok := raw.Lookup("timestamp").TimeOK()
 	if !ok {
@@ -82,6 +86,7 @@ func (event *OutboxEvent) UnmarshalBSON(data []byte) error {
 	case string(CounterUpdated):
 		event.Payload = &CounterUpdatedEvent{
 			Type:      CounterUpdated,
+			CounterId: payload.Lookup("counterId").ObjectID(),
 			Counter:   int(payload.Lookup("counter").AsInt64()),
 			UpdatedBy: payload.Lookup("updatedBy").StringValue(),
 			UserAlias: payload.Lookup("userAlias").StringValue(),
@@ -101,7 +106,7 @@ func (a ByTimestamp) Less(i, j int) bool { return a[i].Timestamp.Before(a[j].Tim
 
 func NewOutboxEvent(event any, now time.Time) *OutboxEvent {
 	return &OutboxEvent{
-		Id:        primitive.NewObjectID(),
+		EventId:   primitive.NewObjectID(),
 		Payload:   event,
 		Timestamp: now,
 	}
