@@ -69,10 +69,10 @@ func main() {
 	defer infra.DisconnectServices(ctx)
 
 	// Create gin router
-	router := gin.Default()
 	if os.Getenv("APP_ENV") == "production" {
 		gin.SetMode(gin.ReleaseMode)
 	}
+	router := gin.Default()
 
 	router.Use(cors.Default())
 	router.Use(metricsHandlerFunc)

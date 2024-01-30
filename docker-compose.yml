@@ -37,13 +37,68 @@ services:
       - zookeeper
     ports:
       - 9092:9092
+      - 9093:9093
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,GOKUBE://localhost:9092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,GOKUBE:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,GOKUBE_LOCAL://localhost:9092,GOKUBE_CONTAINERS://kafka:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,GOKUBE_LOCAL:PLAINTEXT,GOKUBE_CONTAINERS:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+  gokube-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.Api
+    image: gokube-api-image
+    container_name: gokube-api
+    ports:
+      - 8080:8080
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 1s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    environment:
+      APP_ENV: production
+      AUTH_DOMAIN: gokube.eu.auth0.com
+      AUTH_AUDIENCE: gokube
+      MONGO_CONNECTION_STRING: mongodb:27017/?replicaSet=rs0&directConnection=true
+      MONGO_DATABASE: gokube
+      LOGLEVEL: information
+    depends_on:
+      - mongodb
+
+  gokube-outbox:
+    build:
+      context: .
+      dockerfile: Dockerfile.Outbox
+    image: gokube-outbox-image
+    container_name: gokube-outbox
+    environment:
+      MONGO_CONNECTION_STRING: mongodb:27017/?replicaSet=rs0&directConnection=true
+      MONGO_DATABASE: gokube
+      LOGLEVEL: information
+      KAFKA_ADDRESSES: kafka:9093
+      CRON: "*/1 * * * * *"
+    depends_on:
+      - gokube-api
+
+  gokube-consumer:
+    build:
+      context: .
+      dockerfile: Dockerfile.Consumer
+    image: gokube-consumer-image
+    container_name: gokube-consumer
+    environment:
+      MONGO_CONNECTION_STRING: mongodb:27017/?replicaSet=rs0&directConnection=true
+      MONGO_DATABASE: gokube
+      LOGLEVEL: information
+      KAFKA_ADDRESSES: kafka:9093
+      CRON: "*/1 * * * * *"
+    depends_on:
+      - gokube-outbox
     
 volumes:
   mongo-local:

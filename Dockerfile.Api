@@ -1,0 +1,26 @@
+FROM golang:1.21.5 AS builder
+
+WORKDIR /app
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+
+RUN CGO_ENABLED=0 GOOS=linux go build -o main ./api
+
+# Regenerate swagger documentation just in case
+RUN go get -u github.com/swaggo/swag/cmd/swag 
+RUN go install github.com/swaggo/swag/cmd/swag
+RUN swag init -g api/main.go -o ./api/docs
+
+FROM alpine:latest
+
+WORKDIR /app
+
+COPY --from=builder /app/api /app/api
+COPY --from=builder /app/data /app/data
+COPY --from=builder /app/main /app/main
+
+EXPOSE 8080
+
+CMD ["./main"]

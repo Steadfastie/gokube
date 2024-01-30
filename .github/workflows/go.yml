@@ -26,3 +26,21 @@ jobs:
 
     - name: Build Outbox
       run: go build -v -o ./outbox/outbox.exe ./outbox
+
+    - name: Build Consumer
+      run: go build -v -o ./consumer/consumer.exe ./consumer
+
+  docker-compose:
+    runs-on: ubuntu-latest
+    needs: build  # Make sure 'build' job completes before starting this job
+    steps:
+    - name: Check Docker and docker-compose
+      run: |
+        docker --version
+        docker-compose --version
+
+    - name: Build and Run Docker Compose
+      run: docker-compose up -d
+
+    - name: Check if Containers are Running
+      run: docker-compose ps

@@ -81,6 +81,7 @@ func (event *OutboxEvent) UnmarshalBSON(data []byte) error {
 	case string(CounterCreated):
 		event.Payload = &CounterCreatedEvent{
 			Type:      CounterUpdated,
+			CounterId: payload.Lookup("counterId").ObjectID(),
 			UserAlias: payload.Lookup("userAlias").StringValue(),
 		}
 	case string(CounterUpdated):
