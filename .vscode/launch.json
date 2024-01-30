@@ -31,7 +31,7 @@
                 "MONGO_DATABASE": "gokube-dev",
                 "LOGLEVEL": "information",
                 "KAFKA_ADDRESSES": "localhost:9092",
-                "CRON": "*/10 * * * * *"
+                "CRON": "*/5 * * * * *"
               }
         },
         {

@@ -149,7 +149,7 @@ func (processor *outboxProcessor) handleEvents(ctx context.Context, docId primit
 			continue
 		}
 
-		// go processor.removeEvent(ctx, docId, event.Id, eventChan, errChan)
+		go processor.removeEvent(ctx, docId, event.EventId, eventChan, errChan)
 	}
 	errChan <- nil
 }
@@ -219,11 +219,14 @@ func (processor *outboxProcessor) handleEvent(ctx context.Context, event *data.O
 	switch payload := event.Payload.(type) {
 	case *data.CounterCreatedEvent:
 		message := &events.CounterEvent{
-			EventId: event.Id,
-			When:    event.Timestamp,
-			Who:     payload.UserAlias,
-			What:    payload.Type,
+			EventId:   event.EventId,
+			CounterId: payload.CounterId,
+			Who:       payload.UserAlias,
+			What:      payload.Type,
 		}
+		message.AddTrail(events.Api, event.Timestamp)
+		message.AddTrail(events.Outbox, time.Now().UTC())
+
 		value, err := json.Marshal(message)
 		if err != nil {
 			processor.Logger.Error("Error encoding event", zap.Error(err))
@@ -233,11 +236,14 @@ func (processor *outboxProcessor) handleEvent(ctx context.Context, event *data.O
 		processor.Producer.SendMessage(ctx, []byte(string(payload.Type)), value)
 	case *data.CounterUpdatedEvent:
 		message := &events.CounterEvent{
-			EventId: event.Id,
-			When:    event.Timestamp,
-			Who:     fmt.Sprintf("%v (%v)", payload.UpdatedBy, payload.UserAlias),
-			What:    payload.Type,
+			EventId:   event.EventId,
+			CounterId: payload.CounterId,
+			Who:       fmt.Sprintf("%v (%v)", payload.UpdatedBy, payload.UserAlias),
+			What:      payload.Type,
 		}
+		message.AddTrail(events.Api, event.Timestamp)
+		message.AddTrail(events.Outbox, time.Now().UTC())
+
 		value, err := json.Marshal(message)
 		if err != nil {
 			processor.Logger.Error("Error encoding event", zap.Error(err))
