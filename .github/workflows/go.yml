@@ -42,7 +42,7 @@ jobs:
     - name: Build and Run Docker Compose
       run: |
         cd $GITHUB_WORKSPACE
-        ls
+        echo ls
         docker-compose up -d
 
     - name: Check Container Health
