@@ -42,12 +42,10 @@ jobs:
     - name: Build and Run Docker Compose
       run: |
         cd $GITHUB_WORKSPACE
-        docker-compose up -d
+        docker-compose up -f docker-compose.yml -d
 
     - name: Wait for api
-      uses: stringbean/docker-healthcheck-action@v1
+      uses: raschmitt/wait-for-healthy-container/@master
       with:
-        container: gokube-api
-        wait-time: 30
-        require-status: running
-        require-healthy: true
+        container-name: gokube-api
+        timeout: 120
