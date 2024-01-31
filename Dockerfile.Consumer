@@ -1,0 +1,23 @@
+FROM golang:1.21.5 AS builder
+
+WORKDIR /app
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+
+RUN CGO_ENABLED=0 GOOS=linux go build -o main ./consumer
+
+FROM alpine:latest
+
+WORKDIR /app
+
+RUN apk --no-cache add curl
+
+COPY --from=builder /app/consumer /app/consumer
+COPY --from=builder /app/data /app/data
+COPY --from=builder /app/main /app/main
+
+EXPOSE 8080
+
+CMD ["./main"]

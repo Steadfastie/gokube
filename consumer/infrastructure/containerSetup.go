@@ -74,8 +74,21 @@ func GetCron() string {
 	return config.Cron
 }
 
-func GetOutboxProcessor() job.ConsumerProcessor {
+func GetConsumerProcessor() job.ConsumerProcessor {
 	var processor job.ConsumerProcessor
 	container.Resolve(&processor)
 	return processor
+}
+
+func CheckConnections(ctx context.Context) bool {
+	var mongodb *services.MongoDB
+	container.Resolve(&mongodb)
+
+	var broker brocker.Consumer
+	container.Resolve(&broker)
+
+	mongoConnHealthy := mongodb.CheckConnection(ctx)
+	brokerConnHealthy := broker.CheckConnection()
+
+	return mongoConnHealthy && brokerConnHealthy
 }

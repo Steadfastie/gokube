@@ -26,7 +26,6 @@
             "mode": "debug",
             "program": "${workspaceFolder}/outbox/main.go",
             "env": {
-                "APP_ENV": "development",
                 "MONGO_CONNECTION_STRING": "localhost:30000/?replicaSet=rs0&directConnection=true",
                 "MONGO_DATABASE": "gokube-dev",
                 "LOGLEVEL": "information",
@@ -41,7 +40,6 @@
             "mode": "debug",
             "program": "${workspaceFolder}/consumer/main.go",
             "env": {
-                "APP_ENV": "development",
                 "MONGO_CONNECTION_STRING": "localhost:30000/?replicaSet=rs0&directConnection=true",
                 "MONGO_DATABASE": "gokube-dev",
                 "LOGLEVEL": "information",

@@ -9,6 +9,7 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.2.0
 	github.com/golobby/container/v3 v3.3.2
 	github.com/prometheus/client_golang v1.17.0
+	github.com/segmentio/kafka-go v0.4.47
 	github.com/swaggo/files v1.0.1
 	github.com/swaggo/gin-swagger v1.6.0
 	github.com/swaggo/swag v1.16.2
@@ -17,13 +18,11 @@ require (
 )
 
 require (
-	github.com/confluentinc/confluent-kafka-go v1.9.2 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/google/uuid v1.5.0 // indirect
 	github.com/jonboulle/clockwork v0.4.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.15 // indirect
 	github.com/robfig/cron/v3 v3.0.1 // indirect
-	github.com/segmentio/kafka-go v0.4.47 // indirect
 	golang.org/x/exp v0.0.0-20231219180239-dc181d75b848 // indirect
 )
 

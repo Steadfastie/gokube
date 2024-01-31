@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"net/http"
 	"os/signal"
 	"syscall"
 
@@ -36,6 +37,23 @@ func main() {
 				processor.ProcessOutbox(ctx)
 			},
 			infra.GetOutboxProcessor(),
+		),
+	)
+	s.NewJob(
+		gocron.OneTimeJob(
+			gocron.OneTimeJobStartImmediately(),
+		),
+		gocron.NewTask(
+			func() {
+				http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+					if infra.CheckConnections(r.Context()) {
+						w.WriteHeader(http.StatusOK)
+					} else {
+						w.WriteHeader(http.StatusInternalServerError)
+					}
+				})
+				http.ListenAndServe(":8080", nil)
+			},
 		),
 	)
 	s.Start()

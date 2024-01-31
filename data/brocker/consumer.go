@@ -16,15 +16,19 @@ type Message struct {
 
 type Consumer interface {
 	RecieveMessage(ctx context.Context, resultChan chan<- []byte, errChan chan<- error)
+	CheckConnection() bool
 	Disconnect()
 }
 
 type kafkaReader struct {
+	Conn   *kafka.Conn
 	Reader *kafka.Reader
 	Logger *zap.Logger
 }
 
 func NewConsumer(ctx context.Context, logger *zap.Logger, addresses ...string) Consumer {
+	conn, _ := kafka.DialLeader(ctx, "tcp", addresses[0], topic, 0)
+
 	r := kafka.NewReader(kafka.ReaderConfig{
 		Brokers:   addresses,
 		Topic:     topic,
@@ -34,6 +38,7 @@ func NewConsumer(ctx context.Context, logger *zap.Logger, addresses ...string) C
 	})
 
 	connector := &kafkaReader{
+		Conn:   conn,
 		Reader: r,
 		Logger: logger,
 	}
@@ -42,6 +47,12 @@ func NewConsumer(ctx context.Context, logger *zap.Logger, addresses ...string) C
 
 func (consumer *kafkaReader) Disconnect() {
 	consumer.Reader.Close()
+}
+
+// Calls metadata endpoint. See https://github.com/segmentio/kafka-go/issues/389#issuecomment-569334516
+func (consumer *kafkaReader) CheckConnection() bool {
+	_, err := consumer.Conn.Brokers()
+	return err == nil
 }
 
 func (consumer *kafkaReader) RecieveMessage(ctx context.Context, resultChan chan<- []byte, errChan chan<- error) {
