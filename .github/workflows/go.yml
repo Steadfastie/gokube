@@ -44,9 +44,26 @@ jobs:
         cd $GITHUB_WORKSPACE
         docker-compose up -f docker-compose.yml up -d
 
-    - name: Check Container Health
+    - name: Wait for Containers to Start
       run: |
         cd $GITHUB_WORKSPACE  # Change the working directory to the root of the project
+        for _ in {1..30}; do  # Wait for up to 30 seconds
+          HEALTHY_CONTAINERS=$(docker ps --format "{{.Names}} {{.Status}}" | grep "gokube-api\|gokube-outbox\|gokube-consumer" | grep "(healthy)")
+          if [ -n "$HEALTHY_CONTAINERS" ]; then
+            break
+          fi
+          sleep 1
+        done
+
+        if [ -z "$HEALTHY_CONTAINERS" ]; then
+          echo "Error: Containers did not become healthy within the expected time."
+          docker ps
+          exit 1
+        fi
+
+    - name: Check Container Health
+      run: |
+        cd $GITHUB_WORKSPACE 
         HEALTHY_CONTAINERS=$(docker ps --format "{{.Names}} {{.Status}}" | grep "gokube-api\|gokube-outbox\|gokube-consumer" | grep "(healthy)")
 
         if [ -z "$HEALTHY_CONTAINERS" ]; then
