@@ -68,3 +68,8 @@ func (mongodb *MongoDB) DisconnectMongoClient(ctx context.Context, logger *zap.L
 		logger.Panic("Could not disconnect mongo client", zap.Error(err))
 	}
 }
+
+func (mongodb *MongoDB) CheckConnection(ctx context.Context) bool {
+	err := mongodb.MongoClient.Ping(ctx, readpref.PrimaryPreferred())
+	return err == nil
+}

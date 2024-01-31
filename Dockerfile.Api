@@ -17,6 +17,8 @@ FROM alpine:latest
 
 WORKDIR /app
 
+RUN apk --no-cache add curl
+
 COPY --from=builder /app/api /app/api
 COPY --from=builder /app/data /app/data
 COPY --from=builder /app/main /app/main

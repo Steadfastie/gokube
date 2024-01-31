@@ -56,10 +56,10 @@ services:
       - 8080:8080
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
-      interval: 1s
+      interval: 3s
       timeout: 10s
       retries: 5
-      start_period: 60s
+      start_period: 10s
     environment:
       APP_ENV: production
       AUTH_DOMAIN: gokube.eu.auth0.com
@@ -76,6 +76,12 @@ services:
       dockerfile: Dockerfile.Outbox
     image: gokube-outbox-image
     container_name: gokube-outbox
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 3s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
     environment:
       MONGO_CONNECTION_STRING: mongodb:27017/?replicaSet=rs0&directConnection=true
       MONGO_DATABASE: gokube
@@ -91,6 +97,12 @@ services:
       dockerfile: Dockerfile.Consumer
     image: gokube-consumer-image
     container_name: gokube-consumer
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
     environment:
       MONGO_CONNECTION_STRING: mongodb:27017/?replicaSet=rs0&directConnection=true
       MONGO_DATABASE: gokube

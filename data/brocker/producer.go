@@ -13,15 +13,19 @@ const topic = "counter"
 
 type Producer interface {
 	SendMessage(ctx context.Context, key []byte, value []byte)
+	CheckConnection() bool
 	Disconnect()
 }
 
 type kafkaWriter struct {
+	Conn   *kafka.Conn
 	Writer *kafka.Writer
 	Logger *zap.Logger
 }
 
 func NewWriter(ctx context.Context, logger *zap.Logger, addresses ...string) Producer {
+	conn, _ := kafka.DialLeader(ctx, "tcp", addresses[0], topic, 0)
+
 	w := &kafka.Writer{
 		Addr:                   kafka.TCP(addresses...),
 		Topic:                  topic,
@@ -32,6 +36,7 @@ func NewWriter(ctx context.Context, logger *zap.Logger, addresses ...string) Pro
 	}
 
 	connector := &kafkaWriter{
+		Conn:   conn,
 		Writer: w,
 		Logger: logger,
 	}
@@ -40,6 +45,12 @@ func NewWriter(ctx context.Context, logger *zap.Logger, addresses ...string) Pro
 
 func (producer *kafkaWriter) Disconnect() {
 	producer.Writer.Close()
+}
+
+// Calls metadata endpoint. See https://github.com/segmentio/kafka-go/issues/389#issuecomment-569334516
+func (producer *kafkaWriter) CheckConnection() bool {
+	_, err := producer.Conn.Brokers()
+	return err == nil
 }
 
 func (producer *kafkaWriter) SendMessage(ctx context.Context, key []byte, value []byte) {

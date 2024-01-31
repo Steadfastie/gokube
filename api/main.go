@@ -72,11 +72,12 @@ func main() {
 	if os.Getenv("APP_ENV") == "production" {
 		gin.SetMode(gin.ReleaseMode)
 	}
-	router := gin.Default()
+	router := gin.New()
 
 	router.Use(cors.Default())
 	router.Use(metricsHandlerFunc)
 	router.Use(gin.RecoveryWithWriter(gin.DefaultErrorWriter, infra.RecoveryMiddleware))
+	router.Use(gin.LoggerWithWriter(gin.DefaultWriter, "/health"))
 
 	counterController := infra.GetCounterController()
 
@@ -93,6 +94,7 @@ func main() {
 	}
 	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
+	router.GET("/health", handlers.HealthHandler)
 
 	// Run
 	srv := &http.Server{

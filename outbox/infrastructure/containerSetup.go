@@ -71,3 +71,16 @@ func GetOutboxProcessor() job.OutboxProcessor {
 	container.Resolve(&processor)
 	return processor
 }
+
+func CheckConnections(ctx context.Context) bool {
+	var mongodb *services.MongoDB
+	container.Resolve(&mongodb)
+
+	var broker brocker.Producer
+	container.Resolve(&broker)
+
+	mongoConnHealthy := mongodb.CheckConnection(ctx)
+	brokerConnHealthy := broker.CheckConnection()
+
+	return mongoConnHealthy && brokerConnHealthy
+}
