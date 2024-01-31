@@ -44,5 +44,15 @@ jobs:
         cd $GITHUB_WORKSPACE
         docker-compose up -d
 
-    - name: Check if Containers are Running
-      run: docker-compose ps
+    - name: Check Container Health
+      run: |
+        cd $GITHUB_WORKSPACE  # Change the working directory to the root of the project
+        HEALTHY_CONTAINERS=$(docker ps --format "{{.Names}} {{.Status}}" | grep "gokube-api\|gokube-outbox\|gokube-consumer" | grep "(healthy)")
+
+        if [ -z "$HEALTHY_CONTAINERS" ]; then
+          echo "Error: Some containers are not healthy."
+          docker ps
+          exit 1
+        else
+          echo "All containers are healthy."
+        fi
