@@ -42,7 +42,7 @@ jobs:
     - name: Build and Run Docker Compose
       run: |
         cd $GITHUB_WORKSPACE
-        docker-compose up -f docker-compose.yml up -d
+        docker-compose up up -d
 
     - name: Wait for api
       uses: stringbean/docker-healthcheck-action@v1
