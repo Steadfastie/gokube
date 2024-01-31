@@ -40,7 +40,9 @@ jobs:
         docker-compose --version
 
     - name: Build and Run Docker Compose
-      run: docker-compose up -d
+      run: |
+        cd $GITHUB_WORKSPACE
+        docker-compose up -d
 
     - name: Check if Containers are Running
       run: docker-compose ps
