@@ -42,7 +42,8 @@ jobs:
     - name: Build and Run Docker Compose
       run: |
         cd $GITHUB_WORKSPACE
-        echo ls
+        ls > something.txt
+        cat $GITHUB_WORKSPACE/something.txt
         docker-compose up -d
 
     - name: Check Container Health
