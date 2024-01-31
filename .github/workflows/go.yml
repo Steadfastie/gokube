@@ -14,11 +14,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Check services healthiness
-        uses: thegabriele97/dockercompose-health-action@main
-        with:
-          timeout: '60'
-          workdir: 'src'
-          
+      uses: thegabriele97/dockercompose-health-action@main
+      with:
+        timeout: '60'
+        workdir: 'src'
+
   build:
     runs-on: ubuntu-latest
     steps:
