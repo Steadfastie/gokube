@@ -45,9 +45,9 @@ jobs:
         docker-compose up -f docker-compose.yml up -d
 
     - name: Wait for api
-        uses: stringbean/docker-healthcheck-action@v1
-        with:
-          container: gokube-api
-          wait-time: 30
-          require-status: running
-          require-healthy: true
+      uses: stringbean/docker-healthcheck-action@v1
+      with:
+        container: gokube-api
+        wait-time: 30
+        require-status: running
+        require-healthy: true
