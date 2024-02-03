@@ -1,4 +1,4 @@
-name: release
+name: Release
 
 on:
   push:
@@ -11,5 +11,17 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+
+      - name: Determine version from branch name
+        id: version
+        run: |
+          # Extract version from branch name using a regular expression
+          version=$(echo "${GITHUB_REF}" | sed -n 's/refs\/heads\/release\.\([0-9]*\.[0-9]*\.[0-9]*\)/\1/p')
+          
+          # Set the output variable for later use
+          echo "::set-output name=version::${version}"
+
       - name: Release
         uses: softprops/action-gh-release@v1
+        with:
+          tag_name:  ${{ steps.version.outputs.version }}
