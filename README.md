@@ -1,5 +1,6 @@
 
-![Build](https://github.com/Steadfastie/gokube/workflows/Go_build/badge.svg?branch=main)
+![Build](https://github.com/steadfastie/gokube/actions/workflows/go.yml/badge.svg?branch=main) ![Release](https://github.com/steadfastie/gokube/actions/workflows/release.yml/badge.svg) ![Publish](https://github.com/steadfastie/gokube/actions/workflows/publish.yml/badge.svg)
+
 ![gokubelogo](https://github.com/Steadfastie/gokube/assets/68227124/fa1438bf-7a43-466f-b301-f358fb17fd8d)
 
 # gokube
@@ -12,11 +13,9 @@ Go and K8s mastery
 ### Deploy to KinD
     kubectl apply -f ./deployment
 
-## Dashboard setup sequience
-1. kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.7.0/aio/deploy/recommended.yaml
-2. kubectl create serviceaccount -n kubernetes-dashboard admin-user
-3. kubectl create clusterrolebinding -n kubernetes-dashboard admin-user --clusterrole cluster-admin --serviceaccount=kubernetes-dashboard:admin-user
-4. kubectl proxy
-5. kubectl -n kubernetes-dashboard create token admin-user
-6. copy the token
-7. follow the address, paste the token and enjoy!
+### Dashboard setup commands
+1.     kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.7.0/aio/deploy/recommended.yaml
+2.     kubectl apply -f ./deployment/dashboard.yaml
+3.     kubectl proxy
+4.     kubectl -n kubernetes-dashboard create token admin-user
+
