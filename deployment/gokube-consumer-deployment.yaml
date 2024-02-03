@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    io.kompose.service: gokube-consumer
+  name: gokube-consumer
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      io.kompose.service: gokube-consumer
+  template:
+    metadata:
+      labels:
+        io.kompose.network/gokube-default: "true"
+        io.kompose.service: gokube-consumer
+    spec:
+      nodeSelector:
+        tier: application
+      containers:
+        - env:
+            - name: CRON
+              value: '*/1 * * * * *'
+            - name: KAFKA_ADDRESSES
+              value: kafka:9093
+            - name: LOGLEVEL
+              value: information
+            - name: MONGO_CONNECTION_STRING
+              value: mongodb:27017/?replicaSet=rs0&directConnection=true
+            - name: MONGO_DATABASE
+              value: gokube
+          image: gokube-consumer-image
+          livenessProbe:
+            exec:
+              command:
+                - curl
+                - -f
+                - http://localhost:8080/health
+            failureThreshold: 5
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 10
+          name: gokube-consumer
+          resources: 
+            requests:
+              memory: "64Mi"
+            limits:
+              memory: "128Mi"
+              cpu: "250m"

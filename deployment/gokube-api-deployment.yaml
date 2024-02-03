@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gokube-api
+  labels:
+    io.kompose.service: gokube-api
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      io.kompose.service: gokube-api
+  template:
+    metadata:
+      labels:
+        io.kompose.network/gokube-default: "true"
+        io.kompose.service: gokube-api
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: tier
+                    operator: In
+                    values:
+                    - application
+      containers:
+        - env:
+            - name: APP_ENV
+              value: production
+            - name: AUTH_AUDIENCE
+              value: gokube
+            - name: AUTH_DOMAIN
+              value: gokube.eu.auth0.com
+            - name: LOGLEVEL
+              value: information
+            - name: MONGO_CONNECTION_STRING
+              value: mongodb:27017/?replicaSet=rs0&directConnection=true
+            - name: MONGO_DATABASE
+              value: gokube
+          image: gokube-api-image
+          name: gokube-api
+          livenessProbe:
+            exec:
+              command:
+                - curl
+                - -f
+                - http://localhost:8080/health
+            failureThreshold: 10
+            initialDelaySeconds: 10
+            periodSeconds: 3
+            timeoutSeconds: 10
+          readinessProbe:
+            exec:
+              command:
+                - curl
+                - -f
+                - http://localhost:8080/health
+            failureThreshold: 5
+            initialDelaySeconds: 10
+            periodSeconds: 3
+            timeoutSeconds: 10
+          ports:
+            - containerPort: 8080
+              hostPort: 8080
+              protocol: TCP
+          resources: 
+            requests:
+              memory: "128Mi"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"

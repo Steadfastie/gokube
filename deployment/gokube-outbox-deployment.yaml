@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    io.kompose.service: gokube-outbox
+  name: gokube-outbox
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      io.kompose.service: gokube-outbox
+  template:
+    metadata:
+      labels:
+        io.kompose.network/gokube-default: "true"
+        io.kompose.service: gokube-outbox
+    spec:
+      nodeSelector:
+        tier: application
+      containers:
+        - env:
+            - name: CRON
+              value: '*/1 * * * * *'
+            - name: KAFKA_ADDRESSES
+              value: kafka:9093
+            - name: LOGLEVEL
+              value: information
+            - name: MONGO_CONNECTION_STRING
+              value: mongodb:27017/?replicaSet=rs0&directConnection=true
+            - name: MONGO_DATABASE
+              value: gokube
+          image: gokube-outbox-image
+          livenessProbe:
+            exec:
+              command:
+                - curl
+                - -f
+                - http://localhost:8080/health
+            failureThreshold: 5
+            initialDelaySeconds: 10
+            periodSeconds: 3
+            timeoutSeconds: 10
+          name: gokube-outbox
+          resources: 
+            requests:
+              memory: "64Mi"
+            limits:
+              memory: "128Mi"
+              cpu: "250m"

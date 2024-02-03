@@ -1,0 +1,22 @@
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: gokube
+networking:
+  ipFamily: dual
+nodes:
+- role: control-plane
+- role: worker
+  extraPortMappings:
+  - containerPort: 30000
+    hostPort: 30000
+  labels:
+    tier: infrastructure
+- role: worker
+  extraPortMappings:
+  - containerPort: 31000
+    hostPort: 31000
+  labels:
+    tier: application
+- role: worker
+  labels:
+    tier: broker
