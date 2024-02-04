@@ -5,7 +5,9 @@ on:
     types: [published]
 
 env:
-  repository: lkumbrella/gokube
+  api: lkumbrella/gokube-api
+  outbox: lkumbrella/gokube-outbox
+  consumer: lkumbrella/gokube-consumer
 
 jobs:
   docker:
@@ -42,7 +44,7 @@ jobs:
         with:
           file: ./Dockerfile.Api
           push: true
-          tags: ${{ env.repository }}-api:latest,${{ env.repository }}-api:${{ steps.version.outputs.version }}
+          tags: ${{ env.api }}:latest,${{ env.api }}:${{ steps.version.outputs.version }}
 
       -
         name: Outbox build and push
@@ -50,7 +52,7 @@ jobs:
         with:
           file: ./Dockerfile.Outbox
           push: true
-          tags: ${{ env.repository }}-outbox:latest,${{ env.repository }}-outbox:${{ steps.version.outputs.version }}
+          tags: ${{ env.outbox }}:latest,${{ env.outbox }}:${{ steps.version.outputs.version }}
 
       -
         name: Consumer build and push
@@ -58,4 +60,4 @@ jobs:
         with:
           file: ./Dockerfile.Consumer
           push: true
-          tags: ${{ env.repository }}-consumer:latest,${{ env.repository }}-consumer:${{ steps.version.outputs.version }}
+          tags: ${{ env.consumer }}:latest,${{ env.consumer }}:${{ steps.version.outputs.version }}
