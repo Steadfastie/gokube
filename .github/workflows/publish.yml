@@ -5,9 +5,9 @@ on:
     types: [published]
 
 env:
-  api: lkumbrella/gokube-api
-  outbox: lkumbrella/gokube-outbox
-  consumer: lkumbrella/gokube-consumer
+  api: ${{ secrets.DOCKER_USERNAME }}/gokube-api
+  outbox: ${{ secrets.DOCKER_USERNAME }}/gokube-outbox
+  consumer: ${{ secrets.DOCKER_USERNAME }}/gokube-consumer
 
 jobs:
   docker:
@@ -29,22 +29,13 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Determine version from release
-        id: version
-        run: |
-          # Extract version from the release event
-          version=$(echo "${{ github.event.release.tag_name }}" | sed -n 's/v\([0-9]*\.[0-9]*\.[0-9]*\)/\1/p')
-          
-          # Set the output variable for later use
-          echo "::set-output name=version::${version}"
-
       -
         name: API build and push
         uses: docker/build-push-action@v5
         with:
           file: ./Dockerfile.Api
           push: true
-          tags: ${{ env.api }}:latest,${{ env.api }}:${{ steps.version.outputs.version }}
+          tags: ${{ env.api }}:latest,${{ env.api }}:${{ github.event.release.tag_name }}
 
       -
         name: Outbox build and push
@@ -52,7 +43,7 @@ jobs:
         with:
           file: ./Dockerfile.Outbox
           push: true
-          tags: ${{ env.outbox }}:latest,${{ env.outbox }}:${{ steps.version.outputs.version }}
+          tags: ${{ env.outbox }}:latest,${{ env.outbox }}:${{ github.event.release.tag_name }}
 
       -
         name: Consumer build and push
@@ -60,4 +51,4 @@ jobs:
         with:
           file: ./Dockerfile.Consumer
           push: true
-          tags: ${{ env.consumer }}:latest,${{ env.consumer }}:${{ steps.version.outputs.version }}
+          tags: ${{ env.consumer }}:latest,${{ env.consumer }}:${{ github.event.release.tag_name }}
