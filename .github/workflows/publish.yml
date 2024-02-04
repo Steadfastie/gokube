@@ -4,6 +4,9 @@ on:
   release:
     types: [published]
 
+env:
+  repository: lkumbrella/gokube
+
 jobs:
   docker:
     runs-on: ubuntu-latest
@@ -12,33 +15,47 @@ jobs:
       -
         name: Set up QEMU
         uses: docker/setup-qemu-action@v3
+
       -
         name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+
       -
         name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Determine version from release
+        id: version
+        run: |
+          # Extract version from the release event
+          version=$(echo "${{ github.event.release.tag_name }}" | sed -n 's/v\([0-9]*\.[0-9]*\.[0-9]*\)/\1/p')
+          
+          # Set the output variable for later use
+          echo "::set-output name=version::${version}"
+
       -
         name: API build and push
         uses: docker/build-push-action@v5
         with:
           file: ./Dockerfile.Api
           push: true
-          tags: gokube-api:latest
+          tags: ${{ env.repository }}-api:latest,${{ env.repository }}-api:${{ steps.version.outputs.version }}
+
       -
         name: Outbox build and push
         uses: docker/build-push-action@v5
         with:
           file: ./Dockerfile.Outbox
           push: true
-          tags: gokube-outbox:latest
+          tags: ${{ env.repository }}-outbox:latest,${{ env.repository }}-outbox:${{ steps.version.outputs.version }}
+
       -
         name: Consumer build and push
         uses: docker/build-push-action@v5
         with:
           file: ./Dockerfile.Consumer
           push: true
-          tags: gokube-consumer:latest
+          tags: ${{ env.repository }}-consumer:latest,${{ env.repository }}-consumer:${{ steps.version.outputs.version }}
