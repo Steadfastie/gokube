@@ -20,10 +20,10 @@ jobs:
           version=$(echo "${GITHUB_REF}" | sed -n 's/refs\/heads\/release\.\([0-9]*\.[0-9]*\.[0-9]*\)/\1/p')
           
           # Set the output variable for later use
-          echo "{version}=${version}" >> $GITHUB_OUTPUT
+          echo "tag=version" >> $GITHUB_OUTPUT
 
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name:  ${{ steps.version.outputs.version }}
+          tag_name:  ${{ steps.version.outputs.tag }}
           token: ${{ secrets.STEADFASTIE_PAT }}
