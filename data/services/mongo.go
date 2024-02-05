@@ -35,7 +35,7 @@ func NewMongoClient(ctx context.Context, config MongoSettingsProvider, logger *z
 	}
 
 	clientOpts := options.Client().
-		ApplyURI("mongodb://" + mongoSettings.ConnectionString).
+		ApplyURI(mongoSettings.ConnectionString).
 		SetBSONOptions(bsonOpts)
 
 	client, err := mongo.Connect(ctx, clientOpts)

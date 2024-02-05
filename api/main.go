@@ -48,7 +48,6 @@ func metricsHandlerFunc(c *gin.Context) {
 //	@version		1.0
 //	@contact.email	alexander.divovich@gmail.com
 
-//	@host		localhost:8080
 //	@BasePath	/api
 
 //	@securitydefinitions.oauth2.accessCode	OAuth2AccessCode
@@ -98,7 +97,7 @@ func main() {
 
 	// Run
 	srv := &http.Server{
-		Addr:    ":8080",
+		Addr:    ":31000",
 		Handler: router,
 	}
 	go func() {

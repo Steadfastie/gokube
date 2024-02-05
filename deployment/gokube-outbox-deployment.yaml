@@ -18,7 +18,9 @@ spec:
       nodeSelector:
         tier: application
       containers:
-        - env:
+        - name: gokube-outbox
+          image: lkumbrella/gokube-outbox:latest
+          env:
             - name: CRON
               value: '*/1 * * * * *'
             - name: KAFKA_ADDRESSES
@@ -26,10 +28,9 @@ spec:
             - name: LOGLEVEL
               value: information
             - name: MONGO_CONNECTION_STRING
-              value: mongodb:27017/?replicaSet=rs0&directConnection=true
+              value: my-user:gokube-password@example-mongodb-0.example-mongodb-svc.default.svc.cluster.local:27017,example-mongodb-1.example-mongodb-svc.default.svc.cluster.local:27017,example-mongodb-2.example-mongodb-svc.default.svc.cluster.local:27017/admin?replicaSet=example-mongodb&ssl=false
             - name: MONGO_DATABASE
               value: gokube
-          image: gokube-outbox-image
           livenessProbe:
             exec:
               command:
@@ -40,7 +41,9 @@ spec:
             initialDelaySeconds: 10
             periodSeconds: 3
             timeoutSeconds: 10
-          name: gokube-outbox
+          ports:
+            - containerPort: 8080
+              hostPort: 8090
           resources: 
             requests:
               memory: "64Mi"
