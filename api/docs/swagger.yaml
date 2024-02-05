@@ -41,7 +41,6 @@ definitions:
 externalDocs:
   description: GitHub repository
   url: https://github.com/Steadfastie/gokube
-host: localhost:8080
 info:
   contact:
     email: alexander.divovich@gmail.com

@@ -12,3 +12,30 @@ spec:
     - port: 31000
       nodePort: 31000
       targetPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gokube-outbox
+  labels:
+    io.kompose.service: gokube-outbox
+spec:
+  selector:
+    io.kompose.service: gokube-outbox
+  ports:
+    - port: 31010
+      targetPort: 8090
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gokube-consumer
+  labels:
+    io.kompose.service: gokube-consumer
+spec:
+  selector:
+    io.kompose.service: gokube-consumer
+  ports:
+    - port: 31020
+      targetPort: 8100
+

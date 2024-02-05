@@ -19,3 +19,5 @@ Go and K8s mastery
 3.     kubectl proxy
 4.     kubectl -n kubernetes-dashboard create token admin-user
 
+### Update swagger docs
+    swag init -g api/main.go -o ./api/docs 
