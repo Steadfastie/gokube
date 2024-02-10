@@ -16,6 +16,8 @@ Swagger is configured with 🔗[swaggo/swag](https://github.com/swaggo/swag). Do
 #### Auth0 credentials for Swagger
 [The officail guide](https://auth0.com/docs/quickstart/backend/golang/interactive) does not cover a lot. If you require configured credentials or guidance on configuring them yourself, please feel free to contact me via any of my profile links
 
+ *One is always welcome to open an issue or create a discussion!*
+
 ## :watermelon: Docker-compose
 Execute the command within the project directory
 
