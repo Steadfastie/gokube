@@ -5,14 +5,13 @@ metadata:
     io.kompose.service: gokube-outbox
   name: gokube-outbox
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       io.kompose.service: gokube-outbox
   template:
     metadata:
       labels:
-        io.kompose.network/gokube-default: "true"
         io.kompose.service: gokube-outbox
     spec:
       nodeSelector:
@@ -20,30 +19,24 @@ spec:
       containers:
         - name: gokube-outbox
           image: lkumbrella/gokube-outbox:latest
+          imagePullPolicy: Always
           env:
             - name: CRON
               value: '*/1 * * * * *'
             - name: KAFKA_ADDRESSES
-              value: kafka:9093
+              value: gokube-cluster-kafka-brokers.kafka:9092
             - name: LOGLEVEL
-              value: information
+              value: debug
             - name: MONGO_CONNECTION_STRING
-              value: my-user:gokube-password@example-mongodb-0.example-mongodb-svc.default.svc.cluster.local:27017,example-mongodb-1.example-mongodb-svc.default.svc.cluster.local:27017,example-mongodb-2.example-mongodb-svc.default.svc.cluster.local:27017/admin?replicaSet=example-mongodb&ssl=false
+              valueFrom:
+                secretKeyRef:
+                  name: example-mongodb-admin-my-user
+                  key: connectionString.standardSrv            
             - name: MONGO_DATABASE
               value: gokube
-          livenessProbe:
-            exec:
-              command:
-                - curl
-                - -f
-                - http://localhost:8080/health
-            failureThreshold: 5
-            initialDelaySeconds: 10
-            periodSeconds: 3
-            timeoutSeconds: 10
           ports:
-            - containerPort: 8080
-              hostPort: 8090
+            - name: gokube-outbox
+              containerPort: 8080
           resources: 
             requests:
               memory: "64Mi"

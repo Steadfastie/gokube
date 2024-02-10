@@ -12,7 +12,6 @@ spec:
   template:
     metadata:
       labels:
-        io.kompose.network/gokube-default: "true"
         io.kompose.service: gokube-api
     spec:
       affinity:
@@ -27,6 +26,7 @@ spec:
       containers:
         - name: gokube-api
           image: lkumbrella/gokube-api:latest
+          imagePullPolicy: Always
           env:
             - name: APP_ENV
               value: production
@@ -37,7 +37,10 @@ spec:
             - name: LOGLEVEL
               value: information
             - name: MONGO_CONNECTION_STRING
-              value: my-user:gokube-password@example-mongodb-0.example-mongodb-svc.default.svc.cluster.local:27017,example-mongodb-1.example-mongodb-svc.default.svc.cluster.local:27017,example-mongodb-2.example-mongodb-svc.default.svc.cluster.local:27017/admin?replicaSet=example-mongodb&ssl=false
+              valueFrom:
+                secretKeyRef:
+                  name: example-mongodb-admin-my-user
+                  key: connectionString.standardSrv
             - name: MONGO_DATABASE
               value: gokube
           livenessProbe:
@@ -45,7 +48,7 @@ spec:
               command:
                 - curl
                 - -f
-                - http://localhost:8080/health
+                - http://localhost:31000/health
             failureThreshold: 10
             initialDelaySeconds: 10
             periodSeconds: 3
@@ -55,14 +58,14 @@ spec:
               command:
                 - curl
                 - -f
-                - http://localhost:8080/health
+                - http://localhost:31000/health
             failureThreshold: 5
             initialDelaySeconds: 10
             periodSeconds: 3
             timeoutSeconds: 10
           ports:
-            - containerPort: 8080
-              hostPort: 8080
+            - name: gokube-api
+              containerPort: 31000
           resources: 
             requests:
               memory: "128Mi"
