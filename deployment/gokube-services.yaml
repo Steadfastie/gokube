@@ -11,7 +11,7 @@ spec:
   ports:
     - port: 31000
       nodePort: 31000
-      targetPort: 8080
+      targetPort: gokube-api
 ---
 apiVersion: v1
 kind: Service
@@ -23,8 +23,8 @@ spec:
   selector:
     io.kompose.service: gokube-outbox
   ports:
-    - port: 31010
-      targetPort: 8090
+    - port: 31020
+      targetPort: gokube-outbox
 ---
 apiVersion: v1
 kind: Service
@@ -36,6 +36,5 @@ spec:
   selector:
     io.kompose.service: gokube-consumer
   ports:
-    - port: 31020
-      targetPort: 8100
-
+    - port: 31010
+      targetPort: gokube-consumer
