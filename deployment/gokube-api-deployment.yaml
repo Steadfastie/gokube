@@ -48,7 +48,7 @@ spec:
               command:
                 - curl
                 - -f
-                - http://localhost:31000/health
+                - http://localhost:8080/health
             failureThreshold: 10
             initialDelaySeconds: 10
             periodSeconds: 3
@@ -58,14 +58,14 @@ spec:
               command:
                 - curl
                 - -f
-                - http://localhost:31000/health
+                - http://localhost:8080/health
             failureThreshold: 5
             initialDelaySeconds: 10
             periodSeconds: 3
             timeoutSeconds: 10
           ports:
             - name: gokube-api
-              containerPort: 31000
+              containerPort: 8080
           resources: 
             requests:
               memory: "128Mi"
