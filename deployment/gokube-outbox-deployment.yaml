@@ -1,9 +1,9 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  name: gokube-outbox
   labels:
     io.kompose.service: gokube-outbox
-  name: gokube-outbox
 spec:
   replicas: 1
   selector:
@@ -34,6 +34,16 @@ spec:
                   key: connectionString.standardSrv            
             - name: MONGO_DATABASE
               value: gokube
+          livenessProbe:
+            exec:
+              command:
+                - curl
+                - -f
+                - http://localhost:8080/health
+            failureThreshold: 10
+            initialDelaySeconds: 10
+            periodSeconds: 3
+            timeoutSeconds: 10
           ports:
             - name: gokube-outbox
               containerPort: 8080

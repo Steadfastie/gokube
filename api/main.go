@@ -97,7 +97,7 @@ func main() {
 
 	// Run
 	srv := &http.Server{
-		Addr:    ":31000",
+		Addr:    ":8080",
 		Handler: router,
 	}
 	go func() {

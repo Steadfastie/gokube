@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: gokube-api
+  labels:
+    io.kompose.service: gokube-api
+spec:
+  type: NodePort
+  selector:
+    io.kompose.service: gokube-api
+  ports:
+    - port: 31000
+      nodePort: 31000
+      targetPort: gokube-api
