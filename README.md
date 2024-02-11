@@ -4,7 +4,7 @@
 ![gokubelogo](https://github.com/Steadfastie/gokube/assets/68227124/fa1438bf-7a43-466f-b301-f358fb17fd8d)
 
 # :grapes: gokube
-This project started to master deployment of Go application to Kubernetes. The code reflects a commitment to emulating production-grade architecture and navigating implementation challenges. With sincere hope, this repository evolves into a useful template. While this page focuses on practical how-tos, the wiki delves into the reasoning
+This project started to master deployment of Go application to Kubernetes. The code reflects a commitment to emulating production-grade architecture and navigating implementation challenges. With sincere hope, this repository evolves into a useful template. While this page focuses on practical how-tos, the ⚓[wiki](https://github.com/Steadfastie/gokube/wiki) is about whys
 
 Regardless of how one configures their local development environment, running the project may require:
 
